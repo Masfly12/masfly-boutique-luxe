@@ -33,7 +33,7 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark flex items-center justify-center">
+      <div className="dark min-h-screen bg-dark flex items-center justify-center">
         <div className="animate-pulse text-gold font-display text-2xl">Chargement...</div>
       </div>
     );
@@ -41,7 +41,7 @@ const Admin = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-dark text-foreground">
+      <div className="dark min-h-screen bg-dark text-foreground">
         <Navbar />
         <div className="flex items-center justify-center py-20 px-4">
           <div className="w-full max-w-md bg-dark-card rounded-xl border border-gold/20 p-8">
@@ -88,7 +88,7 @@ const Admin = () => {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-dark text-foreground">
+      <div className="dark min-h-screen bg-dark text-foreground">
         <Navbar />
         <div className="flex items-center justify-center py-20 px-4">
           <div className="w-full max-w-md bg-dark-card rounded-xl border border-destructive/30 p-8 text-center">
@@ -106,7 +106,7 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-dark text-foreground">
+    <div className="dark min-h-screen bg-dark text-foreground">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
