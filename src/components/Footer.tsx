@@ -34,10 +34,16 @@ export function Footer() {
             </a>
           </div>
         </div>
-        <div className="mt-8 pt-8 border-t border-gold/10 text-center">
+        <div className="mt-8 pt-8 border-t border-gold/10 flex flex-col items-center gap-4">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} MASFLY. Tous droits réservés.
           </p>
+          <Link
+            to="/admin"
+            className="text-xs text-muted-foreground/50 hover:text-gold/70 transition-colors"
+          >
+            🔒 Administration
+          </Link>
         </div>
       </div>
     </footer>
