@@ -113,16 +113,22 @@ const Index = () => {
             </div>
           ) : featured && featured.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featured.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  name={p.name}
-                  price={p.price}
-                  description={p.description}
-                  imageUrl={p.image_url}
-                  categoryName={(p.categories as any)?.name}
-                />
-              ))}
+              {featured.map((p) => {
+                const images = ((p as any).product_images || [])
+                  .sort((a: any, b: any) => a.display_order - b.display_order)
+                  .map((img: any) => img.image_url);
+                return (
+                  <ProductCard
+                    key={p.id}
+                    name={p.name}
+                    price={p.price}
+                    description={p.description}
+                    imageUrl={p.image_url}
+                    imageUrls={images}
+                    categoryName={(p.categories as any)?.name}
+                  />
+                );
+              })}
             </div>
           ) : (
             <p className="text-center text-muted-foreground">Aucun produit populaire pour le moment. Revenez bientôt !</p>
