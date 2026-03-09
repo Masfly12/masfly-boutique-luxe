@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Upload, ImagePlus } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -37,14 +37,14 @@ export function AdminDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(*)")
+        .select("*, categories(*), product_images(*)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -71,11 +71,6 @@ export function AdminDashboard() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      let imageUrl: string | undefined;
-      if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
-      }
-
       const payload = {
         name: form.name,
         description: form.description || null,
@@ -83,15 +78,55 @@ export function AdminDashboard() {
         category_id: form.category_id || null,
         is_featured: form.is_featured,
         is_active: form.is_active,
-        ...(imageUrl && { image_url: imageUrl }),
       };
+
+      let productId = editingId;
 
       if (editingId) {
         const { error } = await supabase.from("products").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("products").insert(payload);
+        const { data, error } = await supabase.from("products").insert(payload).select("id").single();
         if (error) throw error;
+        productId = data.id;
+
+        // Set main image_url from first uploaded image
+      }
+
+      // Upload new images
+      if (imageFiles.length > 0 && productId) {
+        // Get current max display_order
+        const { data: existing } = await supabase
+          .from("product_images")
+          .select("display_order")
+          .eq("product_id", productId)
+          .order("display_order", { ascending: false })
+          .limit(1);
+
+        let nextOrder = (existing?.[0]?.display_order ?? -1) + 1;
+
+        for (const file of imageFiles) {
+          const imageUrl = await uploadImage(file);
+          await supabase.from("product_images").insert({
+            product_id: productId,
+            image_url: imageUrl,
+            display_order: nextOrder++,
+          });
+        }
+
+        // Update product's main image_url to first image if not set
+        if (!editingId) {
+          const { data: firstImg } = await supabase
+            .from("product_images")
+            .select("image_url")
+            .eq("product_id", productId)
+            .order("display_order")
+            .limit(1)
+            .single();
+          if (firstImg) {
+            await supabase.from("products").update({ image_url: firstImg.image_url }).eq("id", productId);
+          }
+        }
       }
     },
     onSuccess: () => {
@@ -116,11 +151,36 @@ export function AdminDashboard() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const deleteImageMutation = useMutation({
+    mutationFn: async ({ imageId, productId }: { imageId: string; productId: string }) => {
+      const { error } = await supabase.from("product_images").delete().eq("id", imageId);
+      if (error) throw error;
+
+      // Update main image_url to next available image
+      const { data: remaining } = await supabase
+        .from("product_images")
+        .select("image_url")
+        .eq("product_id", productId)
+        .order("display_order")
+        .limit(1);
+
+      await supabase
+        .from("products")
+        .update({ image_url: remaining?.[0]?.image_url || null })
+        .eq("id", productId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      toast.success("Image supprimée !");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
     setShowForm(false);
-    setImageFile(null);
+    setImageFiles([]);
   };
 
   const startEdit = (product: any) => {
@@ -134,11 +194,20 @@ export function AdminDashboard() {
     });
     setEditingId(product.id);
     setShowForm(true);
+    setImageFiles([]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setImageFiles((prev) => [...prev, ...files]);
+  };
+
+  const removeSelectedFile = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
     <div className="space-y-6">
-      {/* Add button */}
       {!showForm && (
         <Button
           onClick={() => { resetForm(); setShowForm(true); }}
@@ -148,7 +217,6 @@ export function AdminDashboard() {
         </Button>
       )}
 
-      {/* Form */}
       {showForm && (
         <div className="bg-dark-card rounded-xl border border-gold/20 p-6 space-y-4">
           <div className="flex items-center justify-between">
@@ -196,21 +264,68 @@ export function AdminDashboard() {
               </SelectContent>
             </Select>
 
-            <div className="flex items-center gap-2">
-              <label className="relative cursor-pointer bg-dark border border-gold/20 rounded-lg px-4 py-2 flex items-center gap-2 hover:border-gold/40 transition-colors">
-                <Upload className="h-4 w-4 text-gold" />
-                <span className="text-sm text-foreground">
-                  {imageFile ? imageFile.name : "Image du produit"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                />
-              </label>
-            </div>
+            <label className="relative cursor-pointer bg-dark border border-gold/20 rounded-lg px-4 py-2 flex items-center gap-2 hover:border-gold/40 transition-colors">
+              <ImagePlus className="h-4 w-4 text-gold" />
+              <span className="text-sm text-foreground">Ajouter des images</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="sr-only"
+                onChange={handleFileSelect}
+              />
+            </label>
           </div>
+
+          {/* Selected files preview */}
+          {imageFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {imageFiles.map((file, i) => (
+                <div key={i} className="relative group">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                    className="w-20 h-20 object-cover rounded-lg border border-gold/20"
+                  />
+                  <button
+                    onClick={() => removeSelectedFile(i)}
+                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Existing images when editing */}
+          {editingId && (() => {
+            const product = products?.find((p) => p.id === editingId);
+            const images = (product as any)?.product_images || [];
+            if (images.length === 0) return null;
+            return (
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Images existantes :</p>
+                <div className="flex flex-wrap gap-2">
+                  {images.map((img: any) => (
+                    <div key={img.id} className="relative group">
+                      <img
+                        src={img.image_url}
+                        alt=""
+                        className="w-20 h-20 object-cover rounded-lg border border-gold/20"
+                      />
+                      <button
+                        onClick={() => deleteImageMutation.mutate({ imageId: img.id, productId: editingId })}
+                        className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
@@ -252,46 +367,63 @@ export function AdminDashboard() {
         </div>
       ) : (
         <div className="space-y-3">
-          {products?.map((p) => (
-            <div
-              key={p.id}
-              className="bg-dark-card rounded-xl border border-gold/10 p-4 flex items-center gap-4"
-            >
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-dark-muted flex-shrink-0">
-                {p.image_url ? (
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gold/20 text-2xl">📦</div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-display font-semibold text-foreground truncate">{p.name}</h3>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <span className="text-gold font-semibold">{p.price.toLocaleString("fr-FR")} FCFA</span>
-                  <span>•</span>
-                  <span>{(p.categories as any)?.name || "Sans catégorie"}</span>
-                  {p.is_featured && <span className="text-gold">⭐</span>}
-                  {!p.is_active && <span className="text-destructive">Inactif</span>}
+          {products?.map((p) => {
+            const images = (p as any)?.product_images || [];
+            return (
+              <div
+                key={p.id}
+                className="bg-dark-card rounded-xl border border-gold/10 p-4 flex items-center gap-4"
+              >
+                <div className="flex gap-1 flex-shrink-0">
+                  {images.length > 0 ? (
+                    images.slice(0, 3).map((img: any, i: number) => (
+                      <div key={img.id} className="w-14 h-14 rounded-lg overflow-hidden bg-dark-muted">
+                        <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ))
+                  ) : p.image_url ? (
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-dark-muted">
+                      <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-dark-muted flex items-center justify-center text-gold/20 text-xl">📦</div>
+                  )}
+                  {images.length > 3 && (
+                    <div className="w-14 h-14 rounded-lg bg-dark-muted flex items-center justify-center text-xs text-muted-foreground">
+                      +{images.length - 3}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display font-semibold text-foreground truncate">{p.name}</h3>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <span className="text-gold font-semibold">{p.price.toLocaleString("fr-FR")} FCFA</span>
+                    <span>•</span>
+                    <span>{(p.categories as any)?.name || "Sans catégorie"}</span>
+                    {images.length > 0 && <span>• {images.length} photo{images.length > 1 ? "s" : ""}</span>}
+                    {p.is_featured && <span className="text-gold">⭐</span>}
+                    {!p.is_active && <span className="text-destructive">Inactif</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => startEdit(p)}
+                    className="p-2 rounded-lg hover:bg-gold/10 text-gold transition-colors"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm("Supprimer ce produit ?")) deleteMutation.mutate(p.id);
+                    }}
+                    className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={() => startEdit(p)}
-                  className="p-2 rounded-lg hover:bg-gold/10 text-gold transition-colors"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm("Supprimer ce produit ?")) deleteMutation.mutate(p.id);
-                  }}
-                  className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {products?.length === 0 && (
             <p className="text-center text-muted-foreground py-12">
               Aucun produit. Cliquez sur "Ajouter un produit" pour commencer.

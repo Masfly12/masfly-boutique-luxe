@@ -7,7 +7,7 @@ export function useProducts(categorySlug?: string) {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("*, categories(*)")
+        .select("*, categories(*), product_images(*)")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
@@ -35,7 +35,7 @@ export function useFeaturedProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(*)")
+        .select("*, categories(*), product_images(*)")
         .eq("is_active", true)
         .eq("is_featured", true)
         .order("created_at", { ascending: false })
