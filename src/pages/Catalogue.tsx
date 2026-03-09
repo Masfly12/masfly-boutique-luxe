@@ -77,16 +77,22 @@ const Catalogue = () => {
           </div>
         ) : filtered && filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filtered.map((p) => (
-              <ProductCard
-                key={p.id}
-                name={p.name}
-                price={p.price}
-                description={p.description}
-                imageUrl={p.image_url}
-                categoryName={(p.categories as any)?.name}
-              />
-            ))}
+            {filtered.map((p) => {
+              const images = ((p as any).product_images || [])
+                .sort((a: any, b: any) => a.display_order - b.display_order)
+                .map((img: any) => img.image_url);
+              return (
+                <ProductCard
+                  key={p.id}
+                  name={p.name}
+                  price={p.price}
+                  description={p.description}
+                  imageUrl={p.image_url}
+                  imageUrls={images}
+                  categoryName={(p.categories as any)?.name}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-20">
