@@ -46,6 +46,23 @@ export function useFeaturedProducts() {
   });
 }
 
+export function useProduct(id: string) {
+  return useQuery({
+    queryKey: ["product", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*, categories(*), product_images(*)")
+        .eq("id", id)
+        .eq("is_active", true)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+}
+
 export function useCategories() {
   return useQuery({
     queryKey: ["categories"],
