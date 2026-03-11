@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
 import { ShoppingBag, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 
 interface ProductCardProps {
+  id: string;
   name: string;
   price: number;
   description?: string | null;
@@ -11,9 +13,10 @@ interface ProductCardProps {
   categoryName?: string;
 }
 
-export function ProductCard({ name, price, description, imageUrl, imageUrls = [], categoryName }: ProductCardProps) {
+export function ProductCard({ id, name, price, description, imageUrl, imageUrls = [], categoryName }: ProductCardProps) {
   const allImages = imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [];
   const [currentIndex, setCurrentIndex] = useState(0);
+  const navigate = useNavigate();
 
   const prev = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -25,7 +28,10 @@ export function ProductCard({ name, price, description, imageUrl, imageUrls = []
   };
 
   return (
-    <div className="group bg-card rounded-lg border border-border hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <div
+      className="group bg-card rounded-lg border border-border hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
+      onClick={() => navigate(`/produit/${id}`)}
+    >
       {/* Image */}
       <div className="aspect-[4/3] overflow-hidden bg-secondary relative">
         {allImages.length > 0 ? (
@@ -88,6 +94,7 @@ export function ProductCard({ name, price, description, imageUrl, imageUrls = []
           href={getWhatsAppUrl(name)}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-primary-foreground font-body font-medium py-2 rounded transition-colors text-sm"
         >
           <MessageCircle className="h-4 w-4" />
