@@ -3,7 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useProduct } from "@/hooks/useProducts";
+import { useReviewStats } from "@/hooks/useReviews";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
+import { ProductReviews } from "@/components/ProductReviews";
+import { StarRating } from "@/components/StarRating";
 import {
   MessageCircle,
   ChevronLeft,
@@ -19,6 +22,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: product, isLoading, isError } = useProduct(id!);
+  const reviewStats = useReviewStats(id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [thumbStart, setThumbStart] = useState(0);
 
@@ -233,6 +237,16 @@ const ProductDetail = () => {
               {product.name}
             </h1>
 
+            {/* Note moyenne */}
+            {reviewStats.count > 0 && (
+              <div className="flex items-center gap-2">
+                <StarRating value={Math.round(reviewStats.average)} size="sm" />
+                <span className="text-sm font-body text-muted-foreground">
+                  {reviewStats.average.toFixed(1)} ({reviewStats.count} avis)
+                </span>
+              </div>
+            )}
+
             {/* Prix */}
             <div className="flex items-baseline gap-2">
               <span className="font-display text-3xl font-bold text-primary">
@@ -302,6 +316,11 @@ const ProductDetail = () => {
               Retour
             </button>
           </div>
+        </div>
+
+        {/* ─── Section avis ─── */}
+        <div className="mt-12 border-t border-border pt-10">
+          <ProductReviews productId={id!} productName={product.name} />
         </div>
       </div>
 
