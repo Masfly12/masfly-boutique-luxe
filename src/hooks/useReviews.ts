@@ -1,63 +1,56 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export interface Review {
-  id: string;
-  product_id: string;
-  author_name: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-}
-
-// ─── Charger les avis d'un produit ────────────────────────
-export function useReviews(productId?: string) {
+export function useProductReviews(productId?: string) {
   return useQuery({
-    queryKey: ["reviews", productId],
+    queryKey: ["product-reviews", productId],
     enabled: !!productId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("reviews")
+        .from("product_reviews")
         .select("*")
-        .eq("product_id", productId!)
-        .eq("is_approved", true)
+        .eq("product_id", productId)
         .order("created_at", { ascending: false });
+
       if (error) throw error;
-      return data as Review[];
+      return data;
     },
   });
 }
 
-// ─── Stats des avis (moyenne + nombre) ────────────────────
-export function useReviewStats(productId?: string) {
-  const { data: reviews } = useReviews(productId);
-  const count = reviews?.length ?? 0;
-  const average =
-    count > 0
-      ? reviews!.reduce((sum, r) => sum + r.rating, 0) / count
-      : 0;
-  const distribution = [5, 4, 3, 2, 1].map((star) => ({
-    star,
-    count: reviews?.filter((r) => r.rating === star).length ?? 0,
-  }));
-  return { count, average, distribution };
-}
+export function useAddReview(productId?: string) {
+  const queryClient = useQueryClient();
 
-// ─── Soumettre un avis ─────────────────────────────────────
-export function useSubmitReview() {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: {
-      product_id: string;
-      author_name: string;
-      rating: number;
-      comment?: string;
-    }) => {
-      const { error } = await supabase.from("reviews").insert(payload);
+    mutationFn: async (payload: { rating: number; comment?: string }) => {
+      if (!productId) throw new Error("Produit introuvable");
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
+      if (!user) throw new Error("Connectez-vous pour laisser un avis.");
+
+      const { error } = await supabase.from("product_reviews").insert({
+        product_id: productId,
+        user_id: user.id,
+        rating: payload.rating,
+        comment: payload.comment || null,
+      });
+
       if (error) throw error;
     },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ["reviews", variables.product_id] });
+    onSuccess: (_, __, context) => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews", productId] });
+      toast.success("Merci pour votre avis !");
+      return context;
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Impossible d'enregistrer votre avis");
     },
   });
 }
+

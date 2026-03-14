@@ -46,20 +46,20 @@ export function useFeaturedProducts() {
   });
 }
 
-export function useProduct(id: string) {
+export function useProduct(id?: string) {
   return useQuery({
     queryKey: ["product", id],
+    enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(*), product_images(*)")
+        .select("*, categories(*), product_images(*), vendors(*)")
         .eq("id", id)
         .eq("is_active", true)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
   });
 }
 

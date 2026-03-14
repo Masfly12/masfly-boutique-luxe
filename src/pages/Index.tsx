@@ -11,6 +11,9 @@ const Index = () => {
   const { data: featured, isLoading: loadingFeatured } = useFeaturedProducts();
   const { data: categories } = useCategories();
 
+  // SEO de base
+  document.title = "MASFLY – Boutique & Marketplace au Bénin";
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />

@@ -49,12 +49,26 @@ export function Footer() {
           <p className="text-xs text-card/50 font-body">
             © {new Date().getFullYear()} MASFLY. Tous droits réservés.
           </p>
-          <Link
-            to="/admin"
-            className="text-xs text-card/30 hover:text-primary/70 transition-colors font-body"
-          >
-            Administration
-          </Link>
+          <div className="flex flex-wrap items-center gap-4 text-xs font-body">
+            <Link
+              to="/livraison-paiements"
+              className="text-card/40 hover:text-primary/70 transition-colors"
+            >
+              Livraison & Paiements
+            </Link>
+            <Link
+              to="/conditions-utilisation"
+              className="text-card/40 hover:text-primary/70 transition-colors"
+            >
+              Conditions d&apos;utilisation
+            </Link>
+            <Link
+              to="/confidentialite"
+              className="text-card/40 hover:text-primary/70 transition-colors"
+            >
+              Confidentialité
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

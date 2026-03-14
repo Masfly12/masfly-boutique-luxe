@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, ChevronDown } from "lucide-react";
+import { Search, Menu, X, User, ChevronDown, Heart, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useCart } from "@/hooks/useCart";
 import { useCategories } from "@/hooks/useProducts";
 
 export function Navbar() {
@@ -9,6 +10,8 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [catOpen, setCatOpen] = useState(false);
   const { data: categories } = useCategories();
+  const { items } = useCart();
+  const cartCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +55,27 @@ export function Navbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-4 ml-auto">
+            <Link
+              to="/panier"
+              className="hidden md:flex items-center gap-1.5 text-sm font-body text-muted-foreground hover:text-primary transition-colors"
+            >
+              <div className="relative">
+                <ShoppingCart className="h-4 w-4" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full text-[10px] px-1 leading-none">
+                    {cartCount}
+                  </span>
+                )}
+              </div>
+              Panier
+            </Link>
+            <Link
+              to="/favoris"
+              className="hidden md:flex items-center gap-1.5 text-sm font-body text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Heart className="h-4 w-4" />
+              Favoris
+            </Link>
             <Link to="/admin" className="hidden md:flex items-center gap-1.5 text-sm font-body text-muted-foreground hover:text-primary transition-colors">
               <User className="h-4 w-4" />
               Mon compte

@@ -32,7 +32,12 @@ const emptyForm: ProductForm = {
   is_active: true,
 };
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  vendorId?: string;
+  isAdmin?: boolean;
+}
+
+export function AdminDashboard({ vendorId, isAdmin }: AdminDashboardProps) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,12 +45,19 @@ export function AdminDashboard() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["admin-products"],
+    queryKey: ["admin-products", vendorId, isAdmin],
+    enabled: isAdmin || !!vendorId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
         .select("*, categories(*), product_images(*)")
         .order("created_at", { ascending: false });
+
+      if (!isAdmin && vendorId) {
+        query = query.eq("vendor_id", vendorId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -78,6 +90,7 @@ export function AdminDashboard() {
         category_id: form.category_id || null,
         is_featured: form.is_featured,
         is_active: form.is_active,
+        vendor_id: vendorId || null,
       };
 
       let productId = editingId;

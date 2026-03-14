@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
-import { ShoppingBag, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { ShoppingBag, ChevronLeft, ChevronRight, MessageCircle, Heart, ShoppingCart } from "lucide-react";
+import { useToggleFavorite } from "@/hooks/useFavorites";
+import { useCart } from "@/hooks/useCart";
 
 interface ProductCardProps {
-  id: string;
+  id?: string;
   name: string;
   price: number;
   description?: string | null;
@@ -16,7 +18,8 @@ interface ProductCardProps {
 export function ProductCard({ id, name, price, description, imageUrl, imageUrls = [], categoryName }: ProductCardProps) {
   const allImages = imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [];
   const [currentIndex, setCurrentIndex] = useState(0);
-  const navigate = useNavigate();
+  const toggleFavorite = id ? useToggleFavorite(id) : null;
+  const cart = id ? useCart() : null;
 
   const prev = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -28,12 +31,9 @@ export function ProductCard({ id, name, price, description, imageUrl, imageUrls 
   };
 
   return (
-    <div
-      className="group bg-card rounded-lg border border-border hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
-      onClick={() => navigate(`/produit/${id}`)}
-    >
+    <div className="group bg-card rounded-lg border border-border hover:shadow-lg transition-all duration-300 overflow-hidden">
       {/* Image */}
-      <div className="aspect-[4/3] overflow-hidden bg-secondary relative">
+      <Link to={id ? `/produit/${id}` : "#"} className="block aspect-[4/3] overflow-hidden bg-secondary relative">
         {allImages.length > 0 ? (
           <>
             <img
@@ -77,7 +77,19 @@ export function ProductCard({ id, name, price, description, imageUrl, imageUrls 
             {categoryName}
           </span>
         )}
-      </div>
+        {id && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite?.mutate();
+            }}
+            className="absolute top-2 right-2 bg-card/80 hover:bg-card rounded-full p-1.5 text-muted-foreground hover:text-red-500 transition-colors shadow"
+          >
+            <Heart className="h-4 w-4" />
+          </button>
+        )}
+      </Link>
 
       {/* Info */}
       <div className="p-3 space-y-2">
@@ -90,16 +102,28 @@ export function ProductCard({ id, name, price, description, imageUrl, imageUrls 
             {price.toLocaleString("fr-FR")} <span className="text-xs font-body font-normal text-muted-foreground">FCFA</span>
           </span>
         </div>
-        <a
-          href={getWhatsAppUrl(name)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-primary-foreground font-body font-medium py-2 rounded transition-colors text-sm"
-        >
-          <MessageCircle className="h-4 w-4" />
-          Commander
-        </a>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              cart?.addItem({ id: id!, name, price, imageUrl });
+            }}
+            disabled={!id}
+            className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-body font-medium py-2 rounded transition-colors text-xs"
+          >
+            <ShoppingCart className="h-3 w-3" />
+            Ajouter au panier
+          </button>
+          <a
+            href={getWhatsAppUrl(name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-primary-foreground font-body font-medium py-2 rounded transition-colors text-xs"
+          >
+            <MessageCircle className="h-3 w-3" />
+            WhatsApp
+          </a>
+        </div>
       </div>
     </div>
   );
