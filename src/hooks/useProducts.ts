@@ -1,9 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export function useProducts(categorySlug?: string) {
+interface ProductFilters {
+  categorySlug?: string;
+  search?: string;        // recherche côté serveur via ilike
+}
+
+export function useProducts({ categorySlug, search }: ProductFilters = {}) {
   return useQuery({
-    queryKey: ["products", categorySlug],
+    queryKey: ["products", categorySlug, search],
     queryFn: async () => {
       let query = supabase
         .from("products")
@@ -11,15 +16,20 @@ export function useProducts(categorySlug?: string) {
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
+      // Filtrer par catégorie côté serveur
       if (categorySlug) {
         const { data: cat } = await supabase
           .from("categories")
           .select("id")
           .eq("slug", categorySlug)
           .single();
-        if (cat) {
-          query = query.eq("category_id", cat.id);
-        }
+        if (cat) query = query.eq("category_id", cat.id);
+      }
+
+      // Recherche plein-texte côté serveur — plus de filter() côté client
+      if (search && search.trim().length > 0) {
+        const term = `%${search.trim()}%`;
+        query = query.or(`name.ilike.${term},description.ilike.${term}`);
       }
 
       const { data, error } = await query;
@@ -54,7 +64,7 @@ export function useProduct(id?: string) {
       const { data, error } = await supabase
         .from("products")
         .select("*, categories(*), product_images(*), vendors(*)")
-        .eq("id", id)
+        .eq("id", id!)
         .eq("is_active", true)
         .single();
       if (error) throw error;
