@@ -1,74 +1,117 @@
 import { Link } from "react-router-dom";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
+import { MapPin, MessageCircle, ArrowRight } from "lucide-react";
 
 export function Footer() {
   return (
     <footer className="bg-foreground text-card">
-      <div className="container mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      {/* CTA band */}
+      <div className="border-b border-card/10">
+        <div className="container mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="font-display text-xl font-bold text-primary mb-3">MASFLY</h3>
-            <p className="text-sm text-card/70 font-body leading-relaxed">
+            <p className="font-display text-base font-bold text-white">Une question ? On répond vite.</p>
+            <p className="text-sm text-card/50 font-body">Support disponible 7j/7 via WhatsApp</p>
+          </div>
+          <a
+            href={getWhatsAppUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-press shrink-0 inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-body font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Nous contacter
+          </a>
+        </div>
+      </div>
+
+      {/* Main footer */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+          {/* Brand */}
+          <div className="md:col-span-1">
+            <h3 className="font-display text-2xl font-bold text-primary mb-3">MASFLY</h3>
+            <p className="text-sm text-card/60 font-body leading-relaxed mb-4">
               Votre boutique en ligne premium au Bénin. Produits de qualité, prix imbattables.
             </p>
-          </div>
-          <div>
-            <h4 className="font-body text-sm font-semibold text-card mb-3 uppercase tracking-wide">Navigation</h4>
-            <div className="space-y-2">
-              <Link to="/" className="block text-sm text-card/70 hover:text-primary transition-colors font-body">Accueil</Link>
-              <Link to="/catalogue" className="block text-sm text-card/70 hover:text-primary transition-colors font-body">Catalogue</Link>
-              <Link to="/a-propos" className="block text-sm text-card/70 hover:text-primary transition-colors font-body">À Propos</Link>
-              <Link to="/contact" className="block text-sm text-card/70 hover:text-primary transition-colors font-body">Contact</Link>
+            <div className="flex items-center gap-2 text-sm text-card/50 font-body">
+              <MapPin className="h-3.5 w-3.5 text-primary/70" />
+              Bénin, Afrique de l'Ouest
             </div>
           </div>
+
+          {/* Navigation */}
           <div>
-            <h4 className="font-body text-sm font-semibold text-card mb-3 uppercase tracking-wide">Service Client</h4>
-            <div className="space-y-2">
+            <h4 className="font-body text-xs font-bold text-card/40 uppercase tracking-widest mb-4">Navigation</h4>
+            <div className="space-y-2.5">
+              {[
+                { to: "/", label: "Accueil" },
+                { to: "/catalogue", label: "Catalogue" },
+                { to: "/favoris", label: "Mes favoris" },
+                { to: "/a-propos", label: "À propos" },
+                { to: "/contact", label: "Contact" },
+              ].map(({ to, label }) => (
+                <Link key={to} to={to} className="flex items-center gap-1.5 text-sm text-card/60 hover:text-primary transition-colors font-body group">
+                  <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Service client */}
+          <div>
+            <h4 className="font-body text-xs font-bold text-card/40 uppercase tracking-widest mb-4">Service client</h4>
+            <div className="space-y-2.5">
+              {[
+                { to: "/livraison-paiements", label: "Livraison & Paiements" },
+                { to: "/conditions-utilisation", label: "Conditions d'utilisation" },
+                { to: "/confidentialite", label: "Confidentialité" },
+              ].map(({ to, label }) => (
+                <Link key={to} to={to} className="block text-sm text-card/60 hover:text-primary transition-colors font-body">
+                  {label}
+                </Link>
+              ))}
               <a
                 href={getWhatsAppUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-sm text-card/70 hover:text-primary transition-colors font-body"
+                className="block text-sm text-card/60 hover:text-primary transition-colors font-body"
               >
-                📱 WhatsApp
+                📱 WhatsApp direct
               </a>
-              <p className="text-sm text-card/70 font-body">📍 Bénin</p>
             </div>
           </div>
+
+          {/* Pourquoi MASFLY */}
           <div>
-            <h4 className="font-body text-sm font-semibold text-card mb-3 uppercase tracking-wide">Pourquoi MASFLY ?</h4>
-            <div className="space-y-2 text-sm text-card/70 font-body">
-              <p>✅ Produits authentiques</p>
-              <p>✅ Livraison rapide</p>
-              <p>✅ Paiement sécurisé</p>
-              <p>✅ Service client réactif</p>
+            <h4 className="font-body text-xs font-bold text-card/40 uppercase tracking-widest mb-4">Pourquoi MASFLY ?</h4>
+            <div className="space-y-2.5">
+              {[
+                "Produits 100% authentiques",
+                "Livraison rapide au Bénin",
+                "Paiement 100% sécurisé",
+                "Support réactif 7j/7",
+                "Prix imbattables",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2 text-sm text-card/60 font-body">
+                  <span className="text-primary text-xs">✓</span>
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
         </div>
-        <div className="mt-8 pt-6 border-t border-card/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-card/50 font-body">
+      </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-card/10">
+        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p className="text-xs text-card/30 font-body">
             © {new Date().getFullYear()} MASFLY. Tous droits réservés.
           </p>
-          <div className="flex flex-wrap items-center gap-4 text-xs font-body">
-            <Link
-              to="/livraison-paiements"
-              className="text-card/40 hover:text-primary/70 transition-colors"
-            >
-              Livraison & Paiements
-            </Link>
-            <Link
-              to="/conditions-utilisation"
-              className="text-card/40 hover:text-primary/70 transition-colors"
-            >
-              Conditions d&apos;utilisation
-            </Link>
-            <Link
-              to="/confidentialite"
-              className="text-card/40 hover:text-primary/70 transition-colors"
-            >
-              Confidentialité
-            </Link>
-          </div>
+          <p className="text-xs text-card/20 font-body">
+            Fait avec ❤️ au Bénin 🇧🇯
+          </p>
         </div>
       </div>
     </footer>

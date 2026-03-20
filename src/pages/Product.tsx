@@ -55,7 +55,7 @@ const Product = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground page-transition">
       <Navbar />
 
       <div className="container mx-auto px-4 py-6">
@@ -208,4 +208,3 @@ const Product = () => {
 };
 
 export default Product;
-

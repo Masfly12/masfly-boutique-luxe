@@ -1,65 +1,92 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts, useCategories } from "@/hooks/useProducts";
+import { useDebounce } from "@/hooks/useDebounce";
+import { usePageTitle } from "@/hooks/usePageTitle";
+import { usePageTransition } from "@/hooks/usePageTransition";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { Input } from "@/components/ui/input";
-import { Search, SlidersHorizontal, Package } from "lucide-react";
+import { Search, SlidersHorizontal, Package, X, LayoutGrid } from "lucide-react";
 
 const Catalogue = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const catSlug = searchParams.get("cat") || undefined;
-  const queryParam = searchParams.get("q") || "";
-  const [search, setSearch] = useState(queryParam);
+  const catSlug    = searchParams.get("cat") || undefined;
+  const queryParam = searchParams.get("q")   || "";
 
-  const { data: products, isLoading } = useProducts(catSlug);
+  const [search, setSearch] = useState(queryParam);
+  const debouncedSearch = useDebounce(search, 350);
+
+  const { data: products, isLoading, isFetching } = useProducts({
+    categorySlug: catSlug,
+    search: debouncedSearch,
+  });
   const { data: categories } = useCategories();
 
-  useEffect(() => {
-    setSearch(queryParam);
-  }, [queryParam]);
+  usePageTitle("Catalogue");
+  const { transitionKey } = usePageTransition();
+  useScrollReveal();
 
-  const filtered = products?.filter((p) =>
-    search ? p.name.toLowerCase().includes(search.toLowerCase()) ||
-             p.description?.toLowerCase().includes(search.toLowerCase()) : true
-  );
+  useEffect(() => { setSearch(queryParam); }, [queryParam]);
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      setSearchParams((prev) => { prev.set("q", debouncedSearch); return prev; }, { replace: true });
+    } else {
+      setSearchParams((prev) => { prev.delete("q"); return prev; }, { replace: true });
+    }
+  }, [debouncedSearch]); // eslint-disable-line
 
   const activeCat = categories?.find((c) => c.slug === catSlug);
+  const resetFilters = () => { setSearch(""); setSearchParams({}); };
+  const hasActiveFilter = !!catSlug || !!debouncedSearch;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div key={transitionKey} className="min-h-screen bg-background text-foreground page-transition">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-6">
-        {/* Breadcrumb */}
-        <div className="text-sm font-body text-muted-foreground mb-4">
-          <span className="hover:text-primary cursor-pointer" onClick={() => (window.location.href = "/")}>Accueil</span>
-          <span className="mx-2">/</span>
-          <span className={activeCat ? "hover:text-primary cursor-pointer" : "text-foreground font-medium"} onClick={() => !activeCat && setSearchParams({})}>
-            Catalogue
-          </span>
-          {activeCat && (
-            <>
-              <span className="mx-2">/</span>
-              <span className="text-foreground font-medium">{activeCat.name}</span>
-            </>
-          )}
+      {/* Header catalogue */}
+      <div className="bg-card border-b border-border">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-body mb-3">
+            <Link to="/" className="hover:text-primary transition-colors">Accueil</Link>
+            <span>/</span>
+            <Link to="/catalogue" className={activeCat ? "hover:text-primary transition-colors" : "text-foreground font-medium"}>Catalogue</Link>
+            {activeCat && <><span>/</span><span className="text-foreground font-medium">{activeCat.name}</span></>}
+          </div>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
+                {activeCat ? activeCat.name : "Tous les produits"}
+              </h1>
+              {activeCat?.description && (
+                <p className="text-sm text-muted-foreground font-body mt-1">{activeCat.description}</p>
+              )}
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground font-body bg-secondary px-3 py-1.5 rounded-full">
+              <LayoutGrid className="h-3.5 w-3.5" />
+              {isLoading || isFetching ? "…" : `${products?.length ?? 0} produit${(products?.length ?? 0) !== 1 ? "s" : ""}`}
+            </div>
+          </div>
         </div>
+      </div>
 
+      <div className="container mx-auto px-4 py-6">
         <div className="flex gap-6">
-          {/* Sidebar filters - desktop */}
+          {/* Sidebar — desktop */}
           <aside className="hidden lg:block w-56 shrink-0">
-            <div className="bg-card border border-border rounded-lg p-4 sticky top-32">
-              <h3 className="font-body font-semibold text-foreground text-sm mb-3 flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4" />
+            <div className="bg-card border border-border rounded-2xl p-4 sticky top-24">
+              <h3 className="font-body font-bold text-foreground text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
                 Catégories
               </h3>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <button
-                  onClick={() => setSearchParams({})}
-                  className={`block w-full text-left px-3 py-1.5 rounded text-sm font-body transition-colors ${
-                    !catSlug ? "bg-primary text-primary-foreground font-medium" : "text-foreground hover:bg-secondary"
+                  onClick={() => setSearchParams(search ? { q: search } : {})}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm font-body transition-colors ${
+                    !catSlug ? "bg-primary text-white font-semibold" : "text-foreground hover:bg-secondary"
                   }`}
                 >
                   Tous les produits
@@ -67,9 +94,9 @@ const Catalogue = () => {
                 {categories?.map((cat) => (
                   <button
                     key={cat.id}
-                    onClick={() => setSearchParams({ cat: cat.slug })}
-                    className={`block w-full text-left px-3 py-1.5 rounded text-sm font-body transition-colors ${
-                      catSlug === cat.slug ? "bg-primary text-primary-foreground font-medium" : "text-foreground hover:bg-secondary"
+                    onClick={() => setSearchParams(search ? { cat: cat.slug, q: search } : { cat: cat.slug })}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-body transition-colors ${
+                      catSlug === cat.slug ? "bg-primary text-white font-semibold" : "text-foreground hover:bg-secondary"
                     }`}
                   >
                     {cat.name}
@@ -79,25 +106,30 @@ const Catalogue = () => {
             </div>
           </aside>
 
-          {/* Main content */}
+          {/* Contenu */}
           <div className="flex-1 min-w-0">
-            {/* Top bar */}
+            {/* Barre recherche + pills mobile */}
             <div className="flex flex-col sm:flex-row gap-3 mb-5">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Rechercher dans cette catégorie..."
-                  className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground h-10"
+                  placeholder="Rechercher un produit…"
+                  className="pl-10 pr-9 bg-card border-border h-11 rounded-xl"
                 />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-              {/* Mobile category pills */}
+              {/* Pills mobile */}
               <div className="flex lg:hidden flex-wrap gap-2">
                 <button
-                  onClick={() => setSearchParams({})}
-                  className={`px-3 py-1.5 rounded text-xs font-body font-medium transition-colors ${
-                    !catSlug ? "bg-primary text-primary-foreground" : "bg-card border border-border text-foreground hover:border-primary"
+                  onClick={() => setSearchParams(search ? { q: search } : {})}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-body font-semibold transition-colors ${
+                    !catSlug ? "bg-primary text-white" : "bg-card border border-border text-foreground hover:border-primary"
                   }`}
                 >
                   Tous
@@ -105,9 +137,9 @@ const Catalogue = () => {
                 {categories?.map((cat) => (
                   <button
                     key={cat.id}
-                    onClick={() => setSearchParams({ cat: cat.slug })}
-                    className={`px-3 py-1.5 rounded text-xs font-body font-medium transition-colors ${
-                      catSlug === cat.slug ? "bg-primary text-primary-foreground" : "bg-card border border-border text-foreground hover:border-primary"
+                    onClick={() => setSearchParams(search ? { cat: cat.slug, q: search } : { cat: cat.slug })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-body font-semibold transition-colors ${
+                      catSlug === cat.slug ? "bg-primary text-white" : "bg-card border border-border text-foreground hover:border-primary"
                     }`}
                   >
                     {cat.name}
@@ -116,21 +148,30 @@ const Catalogue = () => {
               </div>
             </div>
 
-            {/* Results count */}
-            <div className="text-sm font-body text-muted-foreground mb-4">
-              {filtered ? `${filtered.length} produit${filtered.length !== 1 ? "s" : ""} trouvé${filtered.length !== 1 ? "s" : ""}` : "Chargement..."}
+            {/* Barre status */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-body text-muted-foreground">
+                {isLoading || isFetching
+                  ? "Recherche en cours…"
+                  : `${products?.length ?? 0} produit${(products?.length ?? 0) !== 1 ? "s" : ""} trouvé${(products?.length ?? 0) !== 1 ? "s" : ""}`}
+              </p>
+              {hasActiveFilter && (
+                <button onClick={resetFilters} className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <X className="h-3 w-3" /> Réinitialiser
+                </button>
+              )}
             </div>
 
-            {/* Products grid */}
+            {/* Grille */}
             {isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-lg h-72 animate-pulse border border-border" />
+                  <div key={i} className="bg-card rounded-2xl h-72 skeleton-shimmer border border-border" />
                 ))}
               </div>
-            ) : filtered && filtered.length > 0 ? (
+            ) : products && products.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filtered.map((p) => {
+                {products.map((p) => {
                   const images = ((p as any).product_images || [])
                     .sort((a: any, b: any) => a.display_order - b.display_order)
                     .map((img: any) => img.image_url);
@@ -144,16 +185,20 @@ const Catalogue = () => {
                       imageUrl={p.image_url}
                       imageUrls={images}
                       categoryName={(p.categories as any)?.name}
+                      isFeatured={(p as any).is_featured}
                     />
                   );
                 })}
               </div>
             ) : (
-              <div className="text-center py-20 bg-card rounded-lg border border-border">
-                <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground font-body">Aucun produit trouvé.</p>
-                <button onClick={() => { setSearch(""); setSearchParams({}); }} className="mt-3 text-sm text-primary hover:underline font-body">
-                  Réinitialiser les filtres
+              <div className="text-center py-20 bg-card rounded-2xl border border-border">
+                <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+                <p className="text-foreground font-body font-semibold mb-1">
+                  {debouncedSearch ? `Aucun résultat pour « ${debouncedSearch} »` : "Aucun produit dans cette catégorie."}
+                </p>
+                <p className="text-sm text-muted-foreground font-body mb-4">Essaie une autre recherche ou une autre catégorie.</p>
+                <button onClick={resetFilters} className="text-sm text-primary hover:underline font-body">
+                  Voir tous les produits
                 </button>
               </div>
             )}
