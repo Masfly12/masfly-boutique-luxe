@@ -1,73 +1,81 @@
-# Welcome to your Lovable project
+# MASFLY — Boutique & Marketplace au Bénin
 
-## Project info
+Application e-commerce full-stack pour la vente de produits mode, électronique et importés au Bénin.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack technique
 
-## How can I edit this code?
+- **Frontend** : React 18 + TypeScript + Vite
+- **UI** : Tailwind CSS + shadcn/ui (Radix UI)
+- **Backend** : Supabase (PostgreSQL + Auth + Storage + RLS)
+- **State** : TanStack Query v5
+- **Routing** : React Router v6
 
-There are several ways of editing your application.
+## Démarrage rapide
 
-**Use Lovable**
+```bash
+# 1. Cloner le repo
+git clone https://github.com/Masfly12/masfly-boutique-luxe.git
+cd masfly-boutique-luxe
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+# 2. Installer les dépendances
+npm install
 
-Changes made via Lovable will be committed automatically to this repo.
+# 3. Configurer les variables d'environnement
+cp .env.example .env
+# Remplir VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Lancer en développement
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Configuration Supabase
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Créer un projet sur [supabase.com](https://supabase.com)
+2. Exécuter `supabase/schema/masfly_schema_complet.sql` dans l'éditeur SQL
+3. Copier les clés API dans `.env`
+4. Créer un compte admin :
+   ```sql
+   INSERT INTO public.user_roles (user_id, role) VALUES ('ton-uid', 'admin');
+   ```
 
-**Use GitHub Codespaces**
+## Structure du projet
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+src/
+├── pages/          # Pages de l'application (routes)
+├── components/     # Composants UI réutilisables
+│   ├── admin/      # Dashboard admin
+│   └── vendor/     # Espace vendeur
+├── hooks/          # Hooks React (data fetching, state)
+├── integrations/   # Client Supabase + types
+└── lib/            # Utilitaires (WhatsApp, classnames)
 
-## What technologies are used for this project?
+supabase/
+├── migrations/     # Historique des migrations SQL
+└── config.toml     # Config Supabase CLI
+```
 
-This project is built with:
+## Scripts disponibles
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run dev      # Développement local
+npm run build    # Build production
+npm run preview  # Prévisualiser le build
+npm run lint     # Vérifier le code
+npm run test     # Lancer les tests
+```
 
-## How can I deploy this project?
+## Fonctionnalités
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- 🛍️ Catalogue produits avec filtres et recherche serveur
+- 🛒 Panier persistant (localStorage) + commandes sauvegardées en DB
+- 📱 Checkout via WhatsApp
+- ❤️ Favoris
+- ⭐ Avis produits
+- 👑 Dashboard admin (produits, commandes, vendeurs)
+- 🏪 Espace multi-vendeurs avec validation admin obligatoire
+- 🔐 Authentification Supabase + RLS
 
-## Can I connect a custom domain to my Lovable project?
+## Licence
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Propriété de MASFLY. Tous droits réservés.
