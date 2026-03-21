@@ -20,6 +20,10 @@ import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Connexion from "./pages/Connexion";
 import Compte from "./pages/Compte";
+import VendorAuth from "./pages/vendor/VendorAuth";
+import VendorDashboard from "./pages/vendor/VendorDashboard";
+import VendorSetup from "./pages/vendor/VendorSetup";
+import VendorCompte from "./pages/vendor/Compte";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +49,10 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/connexion" element={<Connexion />} />
             <Route path="/compte" element={<Compte />} />
+            <Route path="/vendor/auth" element={<VendorAuth />} />
+            <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+            <Route path="/vendor/setup" element={<VendorSetup />} />
+            <Route path="/vendor/compte" element={<VendorCompte />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
