@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { useFeaturedProducts, useCategories } from "@/hooks/useProducts";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
-import { ArrowRight, Truck, Shield, Headphones, Package, Star, Zap, ShoppingBag } from "lucide-react";
+import { ArrowRight, Truck, Shield, Headphones, Package, Star } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { usePageTransition } from "@/hooks/usePageTransition";
@@ -28,59 +28,92 @@ const Index = () => {
       <Navbar />
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden min-h-[520px] md:min-h-[600px] flex items-center">
-        {/* Background image */}
+      <section className="relative overflow-hidden min-h-[580px] md:min-h-[680px] flex items-center">
+        {/* Background image — overlay sombre 75% pour effet luxe */}
         <div className="absolute inset-0">
-          <img src={heroBanner} alt="MASFLY" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/20" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <img
+            src={heroBanner}
+            alt="MASFLY"
+            className="w-full h-full object-cover scale-105 blur-sm"
+          />
+          <div className="absolute inset-0 bg-black/75" />
+          {/* Ligne dorée décorative verticale */}
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-transparent via-[#C9A84C] to-transparent opacity-60" />
         </div>
 
-        <div className="relative container mx-auto px-4 py-20 md:py-28">
+        <div className="relative container mx-auto px-4 py-24 md:py-32">
           <div className="max-w-2xl animate-fade-up">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-primary/20 border border-primary/40 text-primary-foreground text-xs font-body font-semibold px-3 py-1.5 rounded-full mb-5 backdrop-blur-sm">
-              <Zap className="h-3 w-3 text-primary" />
-              <span className="text-white/90">Livraison dans tout le Bénin 🇧🇯</span>
+
+            {/* Badge minimaliste */}
+            <div className="inline-flex items-center gap-2 border border-[#C9A84C]/50 text-[#C9A84C] text-[11px] font-body tracking-[0.2em] uppercase px-4 py-1.5 mb-10">
+              <span className="w-4 h-px bg-[#C9A84C]" />
+              Livraison · Bénin
+              <span className="w-4 h-px bg-[#C9A84C]" />
             </div>
 
-            <h1 className="font-display text-4xl md:text-6xl font-bold text-white mb-4 leading-tight tracking-tight">
-              Les Meilleurs<br />
-              <span className="text-primary">Produits</span> au Bénin
+            {/* Titre luxe */}
+            <h1 className="font-display mb-6 leading-none tracking-tight">
+              <span className="block text-white/40 text-sm md:text-base font-light tracking-[0.4em] uppercase mb-3">
+                Sélection exclusive
+              </span>
+              <span className="block text-white text-5xl md:text-7xl font-light tracking-[0.05em]">
+                L'élégance
+              </span>
+              <span
+                className="block text-5xl md:text-7xl font-bold tracking-[0.08em] mt-1"
+                style={{ color: "#C9A84C", letterSpacing: "0.1em" }}
+              >
+                ACCESSIBLE
+              </span>
+              <span className="block text-white text-2xl md:text-3xl font-light tracking-[0.3em] uppercase mt-2 opacity-70">
+                au Bénin
+              </span>
             </h1>
-            <p className="font-body text-base md:text-lg text-white/75 mb-8 max-w-lg leading-relaxed">
-              Mode, électronique et bien plus. Qualité premium, prix imbattables — commandez en quelques secondes via WhatsApp.
+
+            {/* Séparateur or */}
+            <div className="flex items-center gap-4 mb-8">
+              <div className="h-px flex-1 max-w-[60px] bg-[#C9A84C]/60" />
+              <p className="font-body text-sm text-white/50 tracking-widest uppercase">
+                Qualité supérieure
+              </p>
+            </div>
+
+            <p className="font-body text-sm md:text-base text-white/55 mb-10 max-w-md leading-relaxed tracking-wide">
+              Mode, électronique & produits importés — une expérience d'achat raffinée, directement via WhatsApp.
             </p>
 
-            <div className="flex flex-wrap gap-3">
+            {/* Boutons style luxe */}
+            <div className="flex flex-wrap gap-4">
               <Link
                 to="/catalogue"
-                className="btn-press inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-body font-semibold px-7 py-3 rounded-xl transition-colors text-sm shadow-lg shadow-primary/30"
+                className="btn-press inline-flex items-center gap-3 border border-[#C9A84C] text-[#C9A84C] hover:bg-[#C9A84C] hover:text-black font-body font-semibold px-8 py-3 transition-all duration-300 text-sm tracking-widest uppercase"
               >
-                <ShoppingBag className="h-4 w-4" />
-                Voir les produits
-                <ArrowRight className="h-4 w-4" />
+                Découvrir la collection
+                <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <a
                 href={getWhatsAppUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-press inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-body font-semibold px-7 py-3 rounded-xl transition-colors text-sm"
+                className="btn-press inline-flex items-center gap-3 border border-white/20 text-white/70 hover:border-white/50 hover:text-white font-body px-8 py-3 transition-all duration-300 text-sm tracking-widest uppercase"
               >
-                📱 WhatsApp
+                WhatsApp
               </a>
             </div>
 
-            {/* Stats */}
-            <div className="flex flex-wrap gap-6 mt-10 pt-8 border-t border-white/10">
+            {/* Stats — discrets, style luxe */}
+            <div className="flex flex-wrap gap-10 mt-14 pt-10 border-t border-white/10">
               {[
-                { value: "500+", label: "Produits" },
-                { value: "1 000+", label: "Clients satisfaits" },
-                { value: "48h", label: "Livraison" },
-              ].map(({ value, label }) => (
-                <div key={label}>
-                  <p className="font-display text-2xl font-bold text-white">{value}</p>
-                  <p className="text-xs text-white/50 font-body mt-0.5">{label}</p>
+                { value: "500+", label: "Produits", icon: "◆" },
+                { value: "1 000+", label: "Clients", icon: "◆" },
+                { value: "48h", label: "Livraison", icon: "◆" },
+              ].map(({ value, label, icon }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="text-[#C9A84C] text-[8px] opacity-60">{icon}</span>
+                  <div>
+                    <p className="font-display text-lg font-semibold text-white/80 tracking-wider">{value}</p>
+                    <p className="text-[10px] text-white/35 font-body tracking-[0.2em] uppercase mt-0.5">{label}</p>
+                  </div>
                 </div>
               ))}
             </div>
