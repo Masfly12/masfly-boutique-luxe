@@ -6,6 +6,8 @@ import { useToggleFavorite } from "@/hooks/useFavorites";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 
+const GOLD = "#C9A84C";
+
 interface ProductCardProps {
   id?: string;
   name: string;
@@ -17,20 +19,21 @@ interface ProductCardProps {
   isFeatured?: boolean;
 }
 
-export function ProductCard({ id, name, price, description, imageUrl, imageUrls = [], categoryName, isFeatured }: ProductCardProps) {
+export function ProductCard({
+  id, name, price, description, imageUrl, imageUrls = [], categoryName, isFeatured,
+}: ProductCardProps) {
   const allImages = imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [];
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const toggleFavorite = id ? useToggleFavorite(id) : null;
   const cart = id ? useCart() : null;
 
   const prev = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setCurrentIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
   };
   const next = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setCurrentIndex((i) => (i === allImages.length - 1 ? 0 : i + 1));
   };
 
@@ -41,14 +44,28 @@ export function ProductCard({ id, name, price, description, imageUrl, imageUrls 
   };
 
   return (
-    <div className="group product-card-hover bg-card rounded-2xl border border-border overflow-hidden flex flex-col">
-      {/* Image */}
-      <Link to={id ? `/produit/${id}` : "#"} className="block relative img-zoom bg-secondary" style={{ aspectRatio: "4/3" }}>
+    <div
+      className="group flex flex-col bg-card border border-border overflow-hidden transition-all duration-300"
+      style={{
+        borderColor: hovered ? `rgba(201,168,76,0.45)` : undefined,
+        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        boxShadow: hovered ? "0 16px 40px rgba(0,0,0,0.12)" : "none",
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* ── Image ── */}
+      <Link
+        to={id ? `/produit/${id}` : "#"}
+        className="block relative overflow-hidden bg-secondary"
+        style={{ aspectRatio: "4/3" }}
+      >
         {allImages.length > 0 ? (
           <img
             src={allImages[currentIndex]}
             alt={name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500"
+            style={{ transform: hovered ? "scale(1.07)" : "scale(1)" }}
             loading="lazy"
           />
         ) : (
@@ -57,71 +74,161 @@ export function ProductCard({ id, name, price, description, imageUrl, imageUrls 
           </div>
         )}
 
-        {/* Nav images */}
+        {/* Overlay dégradé bas — apparaît au hover */}
+        <div
+          className="absolute inset-0 transition-opacity duration-300"
+          style={{
+            background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)",
+            opacity: hovered ? 1 : 0,
+          }}
+        />
+
+        {/* Navigation images */}
         {allImages.length > 1 && (
           <>
-            <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-              <ChevronLeft className="h-3.5 w-3.5" />
+            <button
+              onClick={prev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 text-white p-1 transition-all duration-200"
+              style={{
+                background: "rgba(0,0,0,0.5)",
+                opacity: hovered ? 1 : 0,
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              <ChevronLeft className="h-3 w-3" />
             </button>
-            <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-              <ChevronRight className="h-3.5 w-3.5" />
+            <button
+              onClick={next}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white p-1 transition-all duration-200"
+              style={{
+                background: "rgba(0,0,0,0.5)",
+                opacity: hovered ? 1 : 0,
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              <ChevronRight className="h-3 w-3" />
             </button>
+            {/* Dots */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
               {allImages.map((_, i) => (
-                <span key={i} className={`w-1 h-1 rounded-full transition-all ${i === currentIndex ? "bg-white w-3" : "bg-white/50"}`} />
+                <span
+                  key={i}
+                  className="h-[3px] rounded-none transition-all duration-300"
+                  style={{
+                    width: i === currentIndex ? "16px" : "4px",
+                    background: i === currentIndex ? GOLD : "rgba(255,255,255,0.5)",
+                  }}
+                />
               ))}
             </div>
           </>
         )}
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {categoryName && (
-            <span className="bg-black/50 backdrop-blur-sm text-white text-[10px] font-body font-semibold px-2 py-0.5 rounded-full">
+        {/* Badge catégorie */}
+        {categoryName && (
+          <div className="absolute top-0 left-0">
+            <span
+              className="block text-[9px] font-body tracking-[0.2em] uppercase px-3 py-1"
+              style={{
+                background: "rgba(0,0,0,0.65)",
+                color: `rgba(201,168,76,0.9)`,
+                backdropFilter: "blur(4px)",
+              }}
+            >
               {categoryName}
             </span>
-          )}
-          {isFeatured && (
-            <span className="bg-primary text-white text-[10px] font-body font-semibold px-2 py-0.5 rounded-full badge-pulse">
-              ⭐ Populaire
-            </span>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Favoris */}
+        {/* Badge populaire */}
+        {isFeatured && (
+          <div className="absolute top-0 right-0">
+            <span
+              className="block text-[9px] font-body tracking-[0.15em] uppercase px-3 py-1"
+              style={{ background: GOLD, color: "#0a0a0a" }}
+            >
+              Populaire
+            </span>
+          </div>
+        )}
+
+        {/* Bouton favoris */}
         {id && (
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite?.mutate(); }}
-            className="absolute top-2 right-2 bg-black/40 hover:bg-red-500/80 backdrop-blur-sm text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all"
+            className="absolute bottom-2 right-2 p-1.5 text-white transition-all duration-200"
+            style={{
+              background: "rgba(0,0,0,0.5)",
+              opacity: hovered ? 1 : 0,
+              backdropFilter: "blur(4px)",
+              border: `1px solid rgba(201,168,76,0.3)`,
+            }}
           >
-            <Heart className="h-3.5 w-3.5" />
+            <Heart className="h-3 w-3" />
           </button>
         )}
       </Link>
 
-      {/* Infos */}
+      {/* ── Liseré or animé ── */}
+      <div
+        className="h-[2px] transition-all duration-300 origin-left"
+        style={{
+          background: GOLD,
+          transform: hovered ? "scaleX(1)" : "scaleX(0)",
+          transformOrigin: "left",
+        }}
+      />
+
+      {/* ── Infos produit ── */}
       <div className="p-3 flex flex-col flex-1 gap-2">
-        <h3 className="font-body text-sm font-semibold text-foreground line-clamp-2 leading-snug">
+        {/* Nom */}
+        <h3
+          className="font-body text-sm font-medium text-foreground line-clamp-2 leading-snug tracking-wide"
+        >
           {name}
         </h3>
 
-        <div className="mt-auto pt-1 flex items-center justify-between">
-          <span className="font-display text-base font-bold text-primary">
+        {/* Prix */}
+        <div className="mt-auto pt-1 flex items-baseline gap-1.5">
+          <span
+            className="font-display text-base font-bold"
+            style={{ color: GOLD }}
+          >
             {price.toLocaleString("fr-FR")}
-            <span className="text-xs font-body font-normal text-muted-foreground ml-1">FCFA</span>
+          </span>
+          <span className="text-[10px] font-body text-muted-foreground tracking-widest uppercase">
+            fcfa
           </span>
         </div>
 
-        {/* Boutons */}
-        <div className="flex gap-1.5 mt-1">
+        {/* Boutons — visibles au hover */}
+        <div
+          className="flex gap-1.5 mt-1 transition-all duration-300 overflow-hidden"
+          style={{
+            maxHeight: hovered ? "48px" : "0px",
+            opacity: hovered ? 1 : 0,
+          }}
+        >
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!id}
-            className="btn-press flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary hover:text-white text-primary font-body font-semibold py-2 rounded-xl transition-all text-xs"
+            className="btn-press flex-1 flex items-center justify-center gap-1.5 font-body font-medium py-2 transition-all text-[10px] tracking-[0.15em] uppercase"
+            style={{
+              border: `1px solid rgba(201,168,76,0.5)`,
+              color: GOLD,
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = GOLD;
+              (e.currentTarget as HTMLElement).style.color = "#0a0a0a";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "";
+              (e.currentTarget as HTMLElement).style.color = GOLD;
+            }}
           >
-            <ShoppingCart className="h-3.5 w-3.5" />
+            <ShoppingCart className="h-3 w-3" />
             Panier
           </button>
           <a
@@ -129,9 +236,24 @@ export function ProductCard({ id, name, price, description, imageUrl, imageUrls 
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="btn-press flex-1 flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-body font-semibold py-2 rounded-xl transition-colors text-xs"
+            className="btn-press flex-1 flex items-center justify-center gap-1.5 font-body font-medium py-2 transition-all text-[10px] tracking-[0.15em] uppercase"
+            style={{
+              background: "#1a1a1a",
+              color: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "#25D366";
+              (e.currentTarget as HTMLElement).style.color = "#fff";
+              (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "#1a1a1a";
+              (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.7)";
+              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.1)";
+            }}
           >
-            <MessageCircle className="h-3.5 w-3.5" />
+            <MessageCircle className="h-3 w-3" />
             WhatsApp
           </a>
         </div>
