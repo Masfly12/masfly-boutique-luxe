@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useProducts";
+import { LogoMasfly } from "@/components/LogoMasfly";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -71,8 +72,8 @@ export function Navbar() {
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-3 h-14 md:h-16">
             {/* Logo */}
-            <Link to="/" className="font-display text-xl md:text-2xl font-bold text-primary tracking-tight shrink-0">
-              MASFLY
+            <Link to="/" className="shrink-0 flex items-center">
+              <LogoMasfly size="md" />
             </Link>
 
             {/* Search bar — desktop */}
@@ -199,7 +200,9 @@ export function Navbar() {
       {/* Mobile menu slide panel */}
       <div className={`md:hidden fixed top-0 right-0 bottom-0 z-50 w-72 bg-card shadow-2xl transition-transform duration-300 ease-out ${menuOpen ? "translate-x-0" : "translate-x-full"}`}>
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
-          <span className="font-display text-lg font-bold text-primary">MASFLY</span>
+          <Link to="/" onClick={() => setMenuOpen(false)}>
+            <LogoMasfly size="sm" />
+          </Link>
           <button onClick={() => setMenuOpen(false)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-colors">
             <X className="h-5 w-5" />
           </button>
