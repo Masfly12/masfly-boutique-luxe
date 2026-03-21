@@ -16,7 +16,7 @@ import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Favorites from "./pages/Favorites";
-import Product from "./pages/Product";
+import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Connexion from "./pages/Connexion";
 import Compte from "./pages/Compte";
@@ -35,7 +35,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/catalogue" element={<Catalogue />} />
             <Route path="/favoris" element={<Favorites />} />
-            <Route path="/produit/:id" element={<Product />} />
+            <Route path="/produit/:id" element={<ProductDetail />} />
             <Route path="/panier" element={<Cart />} />
             <Route path="/a-propos" element={<APropos />} />
             <Route path="/contact" element={<Contact />} />

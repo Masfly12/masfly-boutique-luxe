@@ -19,7 +19,7 @@ export function ProductReviews({ productId, productName }: Props) {
 
   const [showForm, setShowForm] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [form, setForm] = useState({ author_name: "", rating: 0, comment: "" });
+  const [form, setForm] = useState({ rating: 0, comment: "" });
   const [submitted, setSubmitted] = useState(false);
 
   const VISIBLE = 3;
@@ -31,20 +31,15 @@ export function ProductReviews({ productId, productName }: Props) {
       toast.error("Veuillez choisir une note");
       return;
     }
-    if (!form.author_name.trim()) {
-      toast.error("Veuillez entrer votre nom");
-      return;
-    }
     try {
       await submitReview.mutateAsync({
         product_id: productId,
-        author_name: form.author_name.trim(),
         rating: form.rating,
         comment: form.comment.trim() || undefined,
       });
       setSubmitted(true);
       setShowForm(false);
-      setForm({ author_name: "", rating: 0, comment: "" });
+      setForm({ rating: 0, comment: "" });
       toast.success("Merci pour votre avis !");
     } catch {
       toast.error("Erreur lors de l'envoi. Réessayez.");
@@ -133,19 +128,6 @@ export function ProductReviews({ productId, productName }: Props) {
             )}
           </div>
 
-          {/* Nom */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-body font-medium text-foreground">
-              Votre nom <span className="text-destructive">*</span>
-            </label>
-            <Input
-              placeholder="Ex: Jean K., Marie A., ..."
-              value={form.author_name}
-              onChange={(e) => setForm({ ...form, author_name: e.target.value })}
-              required
-            />
-          </div>
-
           {/* Commentaire */}
           <div className="space-y-1.5">
             <label className="text-sm font-body font-medium text-foreground">
@@ -175,7 +157,7 @@ export function ProductReviews({ productId, productName }: Props) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => { setShowForm(false); setForm({ author_name: "", rating: 0, comment: "" }); }}
+              onClick={() => { setShowForm(false); setForm({ rating: 0, comment: "" }); }}
             >
               Annuler
             </Button>
@@ -225,7 +207,7 @@ export function ProductReviews({ productId, productName }: Props) {
                   </div>
                   <div>
                     <p className="font-body font-semibold text-foreground text-sm">
-                      {review.author_name}
+                      Utilisateur
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(review.created_at).toLocaleDateString("fr-FR", {
