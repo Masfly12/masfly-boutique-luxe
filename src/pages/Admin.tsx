@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentVendor, useUpsertVendor } from "@/hooks/useVendor";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { VendorManager } from "@/components/admin/VendorManager";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 
 const Admin = () => {
   const { user, loading, isAdmin, signIn, signUp, signOut } = useAuth();
+  const [adminTab, setAdminTab] = useState<"products" | "vendors">("products");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -196,11 +198,31 @@ const Admin = () => {
           )}
         </div>
 
-        {/* Gestion des produits */}
-        <AdminDashboard
-          vendorId={vendor?.id}
-          isAdmin={isAdmin}
-        />
+        {/* Gestion des produits + vendeurs (admin seulement) */}
+        {isAdmin && (
+          <div className="mb-4 flex gap-2 border-b border-gold/20">
+            <button
+              onClick={() => setAdminTab?.("products")}
+              className={`px-4 py-2 text-sm font-body transition-colors ${adminTab !== "vendors" ? "text-gold border-b-2 border-gold" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Produits
+            </button>
+            <button
+              onClick={() => setAdminTab?.("vendors")}
+              className={`px-4 py-2 text-sm font-body transition-colors ${adminTab === "vendors" ? "text-gold border-b-2 border-gold" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Vendeurs
+            </button>
+          </div>
+        )}
+        {adminTab === "vendors" && isAdmin ? (
+          <VendorManager />
+        ) : (
+          <AdminDashboard
+            vendorId={vendor?.id}
+            isAdmin={isAdmin}
+          />
+        )}
       </div>
     </div>
   );

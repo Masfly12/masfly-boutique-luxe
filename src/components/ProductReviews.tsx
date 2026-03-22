@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useReviews, useReviewStats, useSubmitReview } from "@/hooks/useReviews";
 import { StarRating } from "@/components/StarRating";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { MessageSquare, Loader2, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, User, ChevronDown, ChevronUp, MessageSquare, Send } from "lucide-react";
+
+const GOLD = "#C9A84C";
 
 interface Props {
   productId: string;
@@ -25,12 +25,11 @@ export function ProductReviews({ productId, productName }: Props) {
   const VISIBLE = 3;
   const displayedReviews = showAll ? reviews : reviews?.slice(0, VISIBLE);
 
+  const LABELS = ["", "Très mauvais", "Mauvais", "Correct", "Bien", "Excellent !"];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.rating === 0) {
-      toast.error("Veuillez choisir une note");
-      return;
-    }
+    if (form.rating === 0) { toast.error("Choisissez une note"); return; }
     try {
       await submitReview.mutateAsync({
         product_id: productId,
@@ -47,74 +46,107 @@ export function ProductReviews({ productId, productName }: Props) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ─── Header ─── */}
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-primary" />
-          Avis clients
-          {stats.count > 0 && (
-            <span className="text-sm font-body font-normal text-muted-foreground">
-              ({stats.count} avis)
-            </span>
-          )}
-        </h2>
+    <div>
+
+      {/* ── En-tête section ── */}
+      <div className="flex items-end justify-between mb-8">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-px w-5" style={{ background: GOLD }} />
+            <p className="text-[9px] font-body tracking-[0.32em] uppercase" style={{ color: GOLD }}>
+              Expériences clients
+            </p>
+          </div>
+          <h2 className="font-display text-xl md:text-2xl font-light tracking-wide text-foreground">
+            Avis & témoignages
+            {stats.count > 0 && (
+              <span className="ml-3 text-sm font-body font-normal text-muted-foreground">
+                ({stats.count})
+              </span>
+            )}
+          </h2>
+        </div>
+
         {!showForm && !submitted && (
           <button
             onClick={() => setShowForm(true)}
-            className="text-sm font-body font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-2 font-body text-[10px] tracking-[0.2em] uppercase px-5 py-2.5 transition-all duration-200"
+            style={{ border: `1px solid rgba(201,168,76,0.4)`, color: GOLD }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.08)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
           >
-            + Laisser un avis
+            <MessageSquare className="h-3 w-3" />
+            Laisser un avis
           </button>
         )}
       </div>
 
-      {/* ─── Stats globales ─── */}
+      {/* ── Stats globales ── */}
       {stats.count > 0 && (
-        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col sm:flex-row gap-6">
+        <div
+          className="flex flex-col sm:flex-row gap-6 p-6 mb-8"
+          style={{ border: "1px solid var(--border)", background: "var(--card)" }}
+        >
           {/* Note globale */}
-          <div className="flex flex-col items-center justify-center sm:border-r border-border sm:pr-6 sm:min-w-[120px]">
-            <span className="font-display text-5xl font-bold text-foreground">
+          <div
+            className="flex flex-col items-center justify-center sm:pr-6 sm:min-w-[120px]"
+            style={{ borderRight: "1px solid var(--border)" }}
+          >
+            <span className="font-display text-5xl font-bold" style={{ color: GOLD }}>
               {stats.average.toFixed(1)}
             </span>
-            <StarRating value={Math.round(stats.average)} size="sm" />
-            <span className="text-xs text-muted-foreground font-body mt-1">
+            <div className="mt-1">
+              <StarRating value={Math.round(stats.average)} size="sm" />
+            </div>
+            <span className="text-[10px] text-muted-foreground font-body mt-1.5 tracking-widest uppercase">
               {stats.count} avis
             </span>
           </div>
 
-          {/* Distribution */}
-          <div className="flex-1 space-y-1.5">
+          {/* Barres distribution */}
+          <div className="flex-1 space-y-2">
             {stats.distribution.map(({ star, count }) => (
-              <div key={star} className="flex items-center gap-2">
-                <span className="text-xs font-body text-muted-foreground w-4 text-right">{star}</span>
-                <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+              <div key={star} className="flex items-center gap-3">
+                <span className="text-[10px] font-body text-muted-foreground w-3 text-right tracking-wide">
+                  {star}
+                </span>
+                <div className="flex-1 h-1.5 bg-secondary overflow-hidden">
                   <div
-                    className="h-full bg-yellow-400 rounded-full transition-all duration-500"
-                    style={{ width: stats.count > 0 ? `${(count / stats.count) * 100}%` : "0%" }}
+                    className="h-full transition-all duration-700"
+                    style={{
+                      width: stats.count > 0 ? `${(count / stats.count) * 100}%` : "0%",
+                      background: GOLD,
+                      opacity: count > 0 ? 1 : 0.2,
+                    }}
                   />
                 </div>
-                <span className="text-xs font-body text-muted-foreground w-4">{count}</span>
+                <span className="text-[10px] font-body text-muted-foreground w-4 tracking-wide">
+                  {count}
+                </span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* ─── Formulaire ─── */}
+      {/* ── Formulaire ── */}
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="bg-card border border-primary/20 rounded-2xl p-5 space-y-4"
+          className="mb-8 p-6 space-y-5"
+          style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "var(--card)" }}
         >
-          <h3 className="font-body font-semibold text-foreground">
-            Votre avis sur "{productName}"
-          </h3>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="h-px w-4" style={{ background: GOLD }} />
+            <p className="text-[9px] font-body tracking-[0.3em] uppercase" style={{ color: GOLD }}>
+              Votre avis sur "{productName}"
+            </p>
+          </div>
 
           {/* Note */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-body font-medium text-foreground">
-              Note <span className="text-destructive">*</span>
+          <div className="space-y-2">
+            <label className="text-[10px] font-body tracking-[0.2em] uppercase text-muted-foreground">
+              Note <span style={{ color: GOLD }}>*</span>
             </label>
             <StarRating
               value={form.rating}
@@ -122,94 +154,113 @@ export function ProductReviews({ productId, productName }: Props) {
               size="lg"
             />
             {form.rating > 0 && (
-              <p className="text-xs text-muted-foreground font-body">
-                {["", "Très mauvais", "Mauvais", "Correct", "Bien", "Excellent !"][form.rating]}
+              <p className="text-[10px] font-body tracking-[0.15em] uppercase" style={{ color: GOLD }}>
+                {LABELS[form.rating]}
               </p>
             )}
           </div>
 
           {/* Commentaire */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-body font-medium text-foreground">
-              Commentaire <span className="text-muted-foreground font-normal">(optionnel)</span>
+          <div className="space-y-2">
+            <label className="text-[10px] font-body tracking-[0.2em] uppercase text-muted-foreground">
+              Commentaire <span className="text-muted-foreground/50">(optionnel)</span>
             </label>
             <Textarea
               placeholder="Partagez votre expérience avec ce produit..."
               value={form.comment}
               onChange={(e) => setForm({ ...form, comment: e.target.value })}
               rows={3}
+              className="resize-none text-sm border-border focus-visible:ring-0 focus-visible:border-[#C9A84C]"
             />
           </div>
 
-          <div className="flex gap-3">
-            <Button
+          <div className="flex gap-3 pt-1">
+            <button
               type="submit"
               disabled={submitReview.isPending}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-body font-semibold"
+              className="btn-press inline-flex items-center gap-2 font-body font-medium text-[10px] tracking-[0.2em] uppercase px-7 py-3 transition-all duration-200 hover:opacity-90"
+              style={{ background: GOLD, color: "#0a0a0a" }}
             >
               {submitReview.isPending ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Envoi...
-                </span>
-              ) : "Publier mon avis"}
-            </Button>
-            <Button
+                <><Loader2 className="h-3 w-3 animate-spin" /> Envoi...</>
+              ) : (
+                <><Send className="h-3 w-3" /> Publier</>
+              )}
+            </button>
+            <button
               type="button"
-              variant="outline"
               onClick={() => { setShowForm(false); setForm({ rating: 0, comment: "" }); }}
+              className="font-body text-[10px] tracking-[0.2em] uppercase px-5 py-3 text-muted-foreground transition-colors hover:text-foreground"
+              style={{ border: "1px solid var(--border)" }}
             >
               Annuler
-            </Button>
+            </button>
           </div>
         </form>
       )}
 
-      {/* ─── Message après soumission ─── */}
+      {/* ── Message confirmation ── */}
       {submitted && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
-          <p className="text-green-700 font-body font-medium text-sm">
-            ✅ Merci ! Votre avis a été publié.
+        <div
+          className="mb-8 p-5 text-center"
+          style={{ border: `1px solid rgba(201,168,76,0.3)`, background: "rgba(201,168,76,0.04)" }}
+        >
+          <p className="text-[11px] font-body tracking-[0.2em] uppercase" style={{ color: GOLD }}>
+            ✦ Merci — votre avis a été publié
           </p>
         </div>
       )}
 
-      {/* ─── Liste des avis ─── */}
+      {/* ── Liste des avis ── */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-card rounded-2xl h-24 animate-pulse border border-border" />
+            <div key={i} className="h-24 skeleton-shimmer border border-border" />
           ))}
         </div>
       ) : reviews?.length === 0 ? (
-        <div className="text-center py-10 bg-card border border-border rounded-2xl">
-          <MessageSquare className="h-10 w-10 text-muted-foreground/20 mx-auto mb-2" />
-          <p className="text-muted-foreground font-body text-sm">
-            Aucun avis pour l'instant. Soyez le premier !
+        <div
+          className="text-center py-14 border border-border"
+          style={{ background: "var(--card)" }}
+        >
+          <MessageSquare className="h-8 w-8 mx-auto mb-3" style={{ color: `rgba(201,168,76,0.25)` }} />
+          <p className="text-xs font-body tracking-[0.2em] uppercase text-muted-foreground mb-4">
+            Aucun avis pour l'instant
           </p>
           {!showForm && (
             <button
               onClick={() => setShowForm(true)}
-              className="mt-3 text-sm text-primary hover:underline font-body font-medium"
+              className="text-[10px] tracking-[0.2em] uppercase font-body transition-colors"
+              style={{ color: GOLD }}
             >
-              Laisser un avis
+              Soyez le premier →
             </button>
           )}
         </div>
       ) : (
         <div className="space-y-3">
           {displayedReviews?.map((review) => (
-            <div key={review.id} className="bg-card border border-border rounded-2xl p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 text-primary" />
+            <div
+              key={review.id}
+              className="p-5 border border-border transition-all duration-200"
+              style={{ background: "var(--card)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,76,0.3)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ""; }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  {/* Avatar */}
+                  <div
+                    className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                    style={{ border: `1px solid rgba(201,168,76,0.25)` }}
+                  >
+                    <User className="h-3.5 w-3.5" style={{ color: GOLD }} />
                   </div>
                   <div>
-                    <p className="font-body font-semibold text-foreground text-sm">
-                      Utilisateur
+                    <p className="font-body text-xs font-medium text-foreground tracking-wide">
+                      Client vérifié
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground tracking-wide mt-0.5">
                       {new Date(review.created_at).toLocaleDateString("fr-FR", {
                         day: "numeric", month: "long", year: "numeric",
                       })}
@@ -218,9 +269,13 @@ export function ProductReviews({ productId, productName }: Props) {
                 </div>
                 <StarRating value={review.rating} size="sm" />
               </div>
+
               {review.comment && (
-                <p className="mt-3 text-sm font-body text-muted-foreground leading-relaxed pl-10">
-                  "{review.comment}"
+                <p
+                  className="mt-4 text-sm font-body text-muted-foreground leading-[1.85] pl-11"
+                  style={{ borderLeft: `2px solid rgba(201,168,76,0.2)`, paddingLeft: "16px" }}
+                >
+                  {review.comment}
                 </p>
               )}
             </div>
@@ -230,12 +285,24 @@ export function ProductReviews({ productId, productName }: Props) {
           {reviews && reviews.length > VISIBLE && (
             <button
               onClick={() => setShowAll(!showAll)}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-sm font-body font-medium text-primary hover:bg-primary/5 rounded-xl transition-colors border border-border"
+              className="w-full flex items-center justify-center gap-2 py-3 font-body text-[10px] tracking-[0.2em] uppercase transition-all duration-200"
+              style={{
+                border: "1px solid var(--border)",
+                color: "var(--muted-foreground)",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = `rgba(201,168,76,0.4)`;
+                (e.currentTarget as HTMLElement).style.color = GOLD;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = "";
+                (e.currentTarget as HTMLElement).style.color = "";
+              }}
             >
               {showAll ? (
-                <><ChevronUp className="h-4 w-4" /> Voir moins</>
+                <><ChevronUp className="h-3 w-3" /> Voir moins</>
               ) : (
-                <><ChevronDown className="h-4 w-4" /> Voir les {reviews.length - VISIBLE} autres avis</>
+                <><ChevronDown className="h-3 w-3" /> Voir les {reviews.length - VISIBLE} autres avis</>
               )}
             </button>
           )}
