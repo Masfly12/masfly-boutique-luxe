@@ -2,369 +2,324 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { usePageTransition } from "@/hooks/usePageTransition";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  User, ShoppingBag, Heart, Settings, LogOut, Loader2,
-  Package, ChevronRight, CheckCircle2, Clock, Truck, XCircle,
-  Phone, MapPin, Mail, Edit3, Save,
-} from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight } from "lucide-react";
 
-type Tab = "commandes" | "profil" | "favoris";
+const GOLD = "#C9A84C";
+type Mode = "login" | "signup" | "reset";
 
-const STATUS_UI: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  pending:   { label: "En attente",  color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
-  confirmed: { label: "Confirmée",   color: "text-blue-600   bg-blue-50   border-blue-200",   icon: CheckCircle2 },
-  shipped:   { label: "Expédiée",    color: "text-purple-600 bg-purple-50 border-purple-200",  icon: Truck },
-  delivered: { label: "Livrée",      color: "text-green-600  bg-green-50  border-green-200",   icon: CheckCircle2 },
-  cancelled: { label: "Annulée",     color: "text-red-600    bg-red-50    border-red-200",     icon: XCircle },
-};
-
-const Compte = () => {
-  usePageTitle("Mon compte");
-  const { transitionKey } = usePageTransition();
-  useScrollReveal();
-  const navigate  = useNavigate();
-  const { user, profile, loading, signOut, updateProfile } = useAuth();
-
-  const [tab, setTab]           = useState<Tab>("commandes");
-  const [editMode, setEditMode] = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const [form, setForm]         = useState({
-    full_name: profile?.full_name ?? "",
-    phone:     profile?.phone     ?? "",
-    address:   profile?.address   ?? "",
-    city:      profile?.city      ?? "",
-  });
-
-  // Sync form when profile loads
-  if (profile && !editMode && form.full_name === "" && profile.full_name) {
-    setForm({
-      full_name: profile.full_name ?? "",
-      phone:     profile.phone     ?? "",
-      address:   profile.address   ?? "",
-      city:      profile.city      ?? "",
-    });
-  }
-
-  // Commandes de l'utilisateur
-  const { data: orders, isLoading: loadingOrders } = useQuery({
-    queryKey: ["user-orders", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, order_items(*)")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Favoris de l'utilisateur
-  const { data: favorites, isLoading: loadingFavs } = useQuery({
-    queryKey: ["favorites", user?.id],
-    enabled: !!user && tab === "favoris",
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("favorites")
-        .select("id, product_id, products(id, name, price, image_url)")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Redirect to login if not authenticated
-  if (!loading && !user) {
-    navigate("/connexion");
-    return null;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+/* ── Champ de formulaire luxe ── */
+function Field({
+  label, icon: Icon, type = "text", value, onChange, placeholder, required, error,
+  right,
+}: {
+  label: string;
+  icon: React.ElementType;
+  type?: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-[9px] font-body tracking-[0.3em] uppercase text-muted-foreground">
+        {label}
+      </label>
+      <div className="relative">
+        <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          required={required}
+          className="pl-10 pr-10 h-11 text-sm border-border focus-visible:ring-0 focus-visible:border-[#C9A84C] transition-colors"
+          style={{
+            borderColor: error ? "var(--destructive)" : undefined,
+          }}
+        />
+        {right && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">{right}</div>
+        )}
       </div>
-    );
-  }
+      {error && <p className="text-[10px] text-destructive font-body">{error}</p>}
+    </div>
+  );
+}
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
+const Connexion = () => {
+  usePageTitle("Connexion");
+  const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
+
+  const [mode, setMode]         = useState<Mode>("login");
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [confirm, setConfirm]   = useState("");
+  const [showPwd, setShowPwd]   = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const pwdMismatch = mode === "signup" && confirm.length > 0 && confirm !== password;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
+    setLoading(true);
     try {
-      await updateProfile(form);
-      setEditMode(false);
-      toast.success("Profil mis à jour !");
-    } catch {
-      toast.error("Erreur lors de la sauvegarde.");
+      if (mode === "login") {
+        await signIn(email, password);
+        toast.success("Bienvenue !");
+        navigate("/compte");
+      } else if (mode === "signup") {
+        if (pwdMismatch) throw new Error("Les mots de passe ne correspondent pas.");
+        if (password.length < 6) throw new Error("Mot de passe trop court (6 caractères min).");
+        await signUp(email, password, fullName);
+        toast.success("Compte créé ! Vérifiez votre email.");
+        navigate("/compte");
+      } else {
+        const { error } = await (supabase.auth as any).resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/compte`,
+          });
+        if (error) throw error;
+        setResetSent(true);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Une erreur est survenue.");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-    toast.success("Déconnecté.");
-  };
-
-  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Client";
-  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  const eyeBtn = (
+    <button
+      type="button"
+      onClick={() => setShowPwd(!showPwd)}
+      className="text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+    </button>
+  );
 
   return (
-    <div key={transitionKey} className="min-h-screen bg-background text-foreground page-transition">
+    <div className="min-h-screen bg-background text-foreground page-transition">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-4 py-14 flex justify-center">
+        <div className="w-full max-w-md">
 
-        {/* Header profil */}
-        <div className="bg-card border border-border rounded-2xl p-5 mb-6 flex items-center gap-4 reveal">
-          <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white font-display font-bold text-xl shrink-0">
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display text-lg font-bold text-foreground truncate">{displayName}</h1>
-            <p className="text-sm text-muted-foreground font-body truncate">{user?.email}</p>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors font-body px-3 py-2 rounded-xl hover:bg-destructive/10"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Déconnexion</span>
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 bg-secondary rounded-xl p-1 mb-6 reveal">
-          {([
-            { id: "commandes", label: "Commandes", icon: ShoppingBag },
-            { id: "profil",    label: "Profil",    icon: User },
-            { id: "favoris",   label: "Favoris",   icon: Heart },
-          ] as { id: Tab; label: string; icon: typeof User }[]).map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-body font-semibold transition-all ${
-                tab === id
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+          {/* ── En-tête ── */}
+          <div className="text-center mb-8">
+            {/* Monogramme décoratif */}
+            <div
+              className="w-14 h-14 mx-auto mb-5 flex items-center justify-center relative"
+              style={{ border: `1px solid rgba(201,168,76,0.35)` }}
             >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* ── COMMANDES ── */}
-        {tab === "commandes" && (
-          <div className="space-y-3 reveal">
-            {loadingOrders ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-20 bg-card rounded-2xl skeleton-shimmer border border-border" />
-                ))}
-              </div>
-            ) : !orders || orders.length === 0 ? (
-              <div className="text-center py-16 bg-card rounded-2xl border border-border">
-                <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-                <h2 className="font-display text-base font-semibold text-foreground mb-2">Aucune commande</h2>
-                <p className="text-sm text-muted-foreground font-body mb-5">Vos commandes apparaîtront ici</p>
-                <Link
-                  to="/catalogue"
-                  className="btn-press inline-flex items-center gap-2 bg-primary text-white font-body font-semibold px-5 py-2.5 rounded-xl text-sm"
-                >
-                  Découvrir le catalogue
-                </Link>
-              </div>
-            ) : (
-              orders.map((order: any) => {
-                const s = STATUS_UI[order.status] ?? STATUS_UI.pending;
-                const StatusIcon = s.icon;
-                return (
-                  <div key={order.id} className="bg-card border border-border rounded-2xl p-4">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div>
-                        <p className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</p>
-                        <p className="text-xs text-muted-foreground font-body mt-0.5">
-                          {new Date(order.created_at).toLocaleDateString("fr-FR", {
-                            day: "numeric", month: "long", year: "numeric"
-                          })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[11px] px-2.5 py-1 rounded-full border font-body font-semibold flex items-center gap-1 ${s.color}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {s.label}
-                        </span>
-                        <span className="font-display text-sm font-bold text-primary">
-                          {Number(order.total_fcfa).toLocaleString("fr-FR")} F
-                        </span>
-                      </div>
-                    </div>
-                    {/* Articles */}
-                    <div className="space-y-1">
-                      {(order.order_items ?? []).slice(0, 3).map((item: any) => (
-                        <div key={item.id} className="flex justify-between text-xs font-body text-muted-foreground">
-                          <span className="truncate max-w-[60%]">{item.product_name} ×{item.quantity}</span>
-                          <span>{Number(item.subtotal).toLocaleString("fr-FR")} F</span>
-                        </div>
-                      ))}
-                      {(order.order_items ?? []).length > 3 && (
-                        <p className="text-xs text-muted-foreground font-body">
-                          +{order.order_items.length - 3} autre{order.order_items.length - 3 > 1 ? "s" : ""} article{order.order_items.length - 3 > 1 ? "s" : ""}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-
-        {/* ── PROFIL ── */}
-        {tab === "profil" && (
-          <div className="bg-card border border-border rounded-2xl p-6 reveal">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-base font-bold">Informations personnelles</h2>
-              {!editMode && (
-                <button
-                  onClick={() => {
-                    setForm({
-                      full_name: profile?.full_name ?? "",
-                      phone:     profile?.phone     ?? "",
-                      address:   profile?.address   ?? "",
-                      city:      profile?.city      ?? "",
-                    });
-                    setEditMode(true);
-                  }}
-                  className="flex items-center gap-1.5 text-sm text-primary hover:underline font-body"
-                >
-                  <Edit3 className="h-3.5 w-3.5" />
-                  Modifier
-                </button>
-              )}
+              <div className="absolute inset-0" style={{ background: "rgba(201,168,76,0.04)" }} />
+              <User className="h-5 w-5" style={{ color: GOLD }} />
             </div>
 
-            {editMode ? (
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wide">Nom complet</label>
-                    <div className="relative">
-                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Prénom Nom" className="pl-10 h-11 rounded-xl" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wide">Téléphone</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+229 XX XX XX XX" className="pl-10 h-11 rounded-xl" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wide">Adresse</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Quartier, rue..." className="pl-10 h-11 rounded-xl" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wide">Ville</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Cotonou, Porto-Novo..." className="pl-10 h-11 rounded-xl" />
-                    </div>
-                  </div>
-                </div>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="h-px w-8" style={{ background: GOLD, opacity: 0.4 }} />
+              <p className="text-[9px] font-body tracking-[0.35em] uppercase" style={{ color: GOLD }}>
+                Espace client
+              </p>
+              <div className="h-px w-8" style={{ background: GOLD, opacity: 0.4 }} />
+            </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button type="submit" disabled={saving} className="btn-press flex-1 flex items-center justify-center gap-2 bg-primary text-white font-body font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60">
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Enregistrer
+            <h1 className="font-display text-2xl font-light tracking-wide text-foreground">
+              {mode === "login"  && "Connexion"}
+              {mode === "signup" && "Créer un compte"}
+              {mode === "reset"  && "Réinitialisation"}
+            </h1>
+            <p className="text-xs text-muted-foreground font-body mt-1.5 tracking-wide">
+              {mode === "login"  && "Accédez à votre espace MASFLY"}
+              {mode === "signup" && "Rejoignez la communauté MASFLY"}
+              {mode === "reset"  && "Recevez un lien de réinitialisation"}
+            </p>
+          </div>
+
+          {/* ── Carte principale ── */}
+          <div
+            className="border border-border overflow-hidden"
+            style={{ background: "var(--card)" }}
+          >
+            {/* Tabs login / signup */}
+            {mode !== "reset" && (
+              <div className="flex border-b border-border">
+                {(["login", "signup"] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className="flex-1 py-3.5 text-[10px] font-body tracking-[0.2em] uppercase transition-all"
+                    style={{
+                      color: mode === m ? GOLD : "var(--muted-foreground)",
+                      borderBottom: mode === m ? `2px solid ${GOLD}` : "2px solid transparent",
+                      background: mode === m ? "rgba(201,168,76,0.03)" : "",
+                    }}
+                  >
+                    {m === "login" ? "Connexion" : "Inscription"}
                   </button>
-                  <button type="button" onClick={() => setEditMode(false)} className="flex-1 border border-border text-muted-foreground font-body font-semibold py-2.5 rounded-xl text-sm hover:bg-secondary transition-colors">
-                    Annuler
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-4">
-                {[
-                  { icon: Mail,  label: "Email",     value: user?.email },
-                  { icon: User,  label: "Nom",       value: profile?.full_name || "—" },
-                  { icon: Phone, label: "Téléphone", value: profile?.phone     || "—" },
-                  { icon: MapPin,label: "Adresse",   value: [profile?.address, profile?.city].filter(Boolean).join(", ") || "—" },
-                ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="flex items-center gap-4">
-                    <div className="w-9 h-9 bg-secondary rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-body">{label}</p>
-                      <p className="text-sm text-foreground font-body font-medium">{value}</p>
-                    </div>
-                  </div>
                 ))}
               </div>
             )}
-          </div>
-        )}
 
-        {/* ── FAVORIS ── */}
-        {tab === "favoris" && (
-          <div className="reveal">
-            {loadingFavs ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-40 bg-card rounded-2xl skeleton-shimmer border border-border" />
-                ))}
-              </div>
-            ) : !favorites || favorites.length === 0 ? (
-              <div className="text-center py-16 bg-card rounded-2xl border border-border">
-                <Heart className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-                <h2 className="font-display text-base font-semibold text-foreground mb-2">Aucun favori</h2>
-                <p className="text-sm text-muted-foreground font-body mb-5">Ajoutez des produits à vos favoris</p>
-                <Link to="/catalogue" className="btn-press inline-flex items-center gap-2 bg-primary text-white font-body font-semibold px-5 py-2.5 rounded-xl text-sm">
-                  Explorer le catalogue
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {favorites.map((fav: any) => {
-                  const p = fav.products;
-                  if (!p) return null;
-                  return (
-                    <Link key={fav.id} to={`/produit/${p.id}`} className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary hover:shadow-md transition-all group">
-                      <div className="aspect-video bg-secondary overflow-hidden">
-                        {p.image_url
-                          ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          : <div className="w-full h-full flex items-center justify-center"><Package className="h-8 w-8 text-muted-foreground/20" /></div>
-                        }
-                      </div>
-                      <div className="p-3">
-                        <p className="text-sm font-body font-semibold text-foreground line-clamp-1">{p.name}</p>
-                        <p className="text-xs text-primary font-display font-bold mt-0.5">{Number(p.price).toLocaleString("fr-FR")} FCFA</p>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
+            {/* Contenu formulaire */}
+            <div className="p-6 md:p-8">
+
+              {/* ── Email de réinitialisation envoyé ── */}
+              {resetSent ? (
+                <div className="text-center py-6 space-y-4">
+                  <div
+                    className="w-12 h-12 mx-auto flex items-center justify-center"
+                    style={{ border: `1px solid rgba(201,168,76,0.3)` }}
+                  >
+                    <Mail className="h-5 w-5" style={{ color: GOLD }} />
+                  </div>
+                  <p className="font-body text-sm text-foreground font-medium tracking-wide">
+                    Email envoyé !
+                  </p>
+                  <p className="text-xs text-muted-foreground font-body leading-relaxed">
+                    Vérifiez votre boîte mail et cliquez sur le lien pour réinitialiser votre mot de passe.
+                  </p>
+                  <button
+                    onClick={() => { setMode("login"); setResetSent(false); }}
+                    className="text-[10px] tracking-[0.2em] uppercase font-body transition-colors"
+                    style={{ color: GOLD }}
+                  >
+                    ← Retour à la connexion
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+
+                  {/* Nom — inscription */}
+                  {mode === "signup" && (
+                    <Field
+                      label="Prénom & Nom"
+                      icon={User}
+                      value={fullName}
+                      onChange={setFullName}
+                      placeholder="Jean Dupont"
+                    />
+                  )}
+
+                  {/* Email */}
+                  <Field
+                    label="Email"
+                    icon={Mail}
+                    type="email"
+                    value={email}
+                    onChange={setEmail}
+                    placeholder="vous@exemple.com"
+                    required
+                  />
+
+                  {/* Mot de passe */}
+                  {mode !== "reset" && (
+                    <Field
+                      label="Mot de passe"
+                      icon={Lock}
+                      type={showPwd ? "text" : "password"}
+                      value={password}
+                      onChange={setPassword}
+                      placeholder="••••••••"
+                      required
+                      right={eyeBtn}
+                    />
+                  )}
+
+                  {/* Confirmer MDP — inscription */}
+                  {mode === "signup" && (
+                    <Field
+                      label="Confirmer le mot de passe"
+                      icon={Lock}
+                      type={showPwd ? "text" : "password"}
+                      value={confirm}
+                      onChange={setConfirm}
+                      placeholder="••••••••"
+                      required
+                      error={pwdMismatch ? "Les mots de passe ne correspondent pas" : undefined}
+                    />
+                  )}
+
+                  {/* Mot de passe oublié */}
+                  {mode === "login" && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => setMode("reset")}
+                        className="text-[10px] tracking-[0.15em] uppercase font-body text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Bouton soumettre */}
+                  <button
+                    type="submit"
+                    disabled={loading || pwdMismatch}
+                    className="btn-press w-full flex items-center justify-center gap-2 font-body font-medium text-[10px] tracking-[0.2em] uppercase py-[14px] mt-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                    style={{ background: GOLD, color: "#0a0a0a" }}
+                  >
+                    {loading ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Chargement...</>
+                    ) : (
+                      <>
+                        {mode === "login"  && "Se connecter"}
+                        {mode === "signup" && "Créer mon compte"}
+                        {mode === "reset"  && "Envoyer le lien"}
+                        <ArrowRight className="h-3 w-3" />
+                      </>
+                    )}
+                  </button>
+
+                  {/* CGU inscription */}
+                  {mode === "signup" && (
+                    <p className="text-[10px] text-muted-foreground font-body text-center leading-relaxed">
+                      En créant un compte, vous acceptez nos{" "}
+                      <Link to="/conditions-utilisation" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                        conditions d'utilisation
+                      </Link>{" "}
+                      et notre{" "}
+                      <Link to="/confidentialite" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                        politique de confidentialité
+                      </Link>.
+                    </p>
+                  )}
+
+                  {mode === "reset" && (
+                    <button
+                      type="button"
+                      onClick={() => setMode("login")}
+                      className="w-full text-[10px] tracking-[0.2em] uppercase font-body text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      ← Retour
+                    </button>
+                  )}
+                </form>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Retour accueil */}
+          <p className="text-center mt-5">
+            <Link
+              to="/"
+              className="text-[10px] tracking-[0.2em] uppercase font-body text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Retour à l'accueil
+            </Link>
+          </p>
+        </div>
       </div>
 
       <Footer />
@@ -372,4 +327,4 @@ const Compte = () => {
   );
 };
 
-export default Compte;
+export default Connexion;

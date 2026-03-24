@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useVendorAuth, useVendorProfile } from "@/hooks/useVendor";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAuth } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ const FRAIS_ACCES = "À définir";
 const VendorPayment = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useVendorAuth();
-  const { data: profile, isLoading: profileLoading, refetch } = useVendorProfile(user?.id);
+  const { data: profile, isLoading: profileLoading, refetch } = useVendorProfile();
 
   const [reference, setReference] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,7 +55,7 @@ const VendorPayment = () => {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.rpc("vendor_declare_payment", {
+      const { error } = await supabaseAuth.rpc("vendor_declare_payment", {
         _vendor_id: profile.id,
         _reference: reference.trim(),
       });

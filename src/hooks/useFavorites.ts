@@ -27,7 +27,7 @@ export function useToggleFavorite(productId: string) {
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser(); // ✅ Supabase v2
+      } = await (supabase.auth as any).getUser(); // ✅ Supabase v2
 
       if (userError) throw userError;
       if (!user) {

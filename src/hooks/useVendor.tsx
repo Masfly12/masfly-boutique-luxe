@@ -1,21 +1,42 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { supabase, supabaseAuth } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { User } from "@supabase/supabase-js";
 
 // ─── Auth vendeur ─────────────────────────────────────────────────────────────
 
 export function useVendorAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabaseAuth.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseAuth.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabaseAuth.auth.signUp({ email, password });
     if (error) throw error;
   };
 
-  return { signIn, signUp };
+  const signOut = async () => {
+    await supabaseAuth.auth.signOut();
+  };
+
+  return { user, loading, signIn, signUp, signOut };
 }
 
 export interface VendorPayload {
@@ -100,7 +121,7 @@ export function useVendorProfile() {
   return useQuery({
     queryKey: ["vendor-profile"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseAuth.auth.getUser();
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -120,7 +141,7 @@ export function useSaveVendorProfile() {
 
   return useMutation({
     mutationFn: async (payload: Partial<VendorPayload> & { logo_url?: string; shop_name?: string; shop_description?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseAuth.auth.getUser();
       if (!user) throw new Error("Non connecté");
 
       const { data, error } = await supabase
@@ -167,7 +188,7 @@ export function useVendorProducts() {
   return useQuery({
     queryKey: ["vendor-products"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseAuth.auth.getUser();
       if (!user) return [];
 
       const { data: vendor } = await supabase
@@ -196,7 +217,7 @@ export function useVendorOrders() {
   return useQuery({
     queryKey: ["vendor-orders"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseAuth.auth.getUser();
       if (!user) return [];
 
       const { data: vendor } = await supabase

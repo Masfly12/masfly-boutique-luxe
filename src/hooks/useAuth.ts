@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAuth } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
 
@@ -20,7 +20,7 @@ export function useAuth() {
   const queryClient           = useQueryClient();
 
   const checkAdmin = useCallback(async (userId: string) => {
-    const { data, error } = await supabase.rpc("has_role", {
+    const { data, error } = await supabaseAuth.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
     });
@@ -37,7 +37,7 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseAuth.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
@@ -46,7 +46,7 @@ export function useAuth() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
         if (!session?.user) {
@@ -66,12 +66,12 @@ export function useAuth() {
   }, [checkAdmin, fetchProfile]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseAuth.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabaseAuth.auth.signUp({ email, password });
     if (error) throw error;
     // Mise à jour du profil avec le nom si fourni
     if (data.user && fullName) {
@@ -80,7 +80,7 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await supabaseAuth.auth.signOut();
     queryClient.clear();
   };
 

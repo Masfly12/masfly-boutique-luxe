@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAuth } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ export function useCreateOrder() {
       // Récupère l'utilisateur connecté (peut être null → commande guest)
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await supabaseAuth.auth.getUser();
 
       // 1. Créer la commande
       const { data: order, error: orderError } = await supabase

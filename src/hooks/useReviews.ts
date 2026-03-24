@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAuth } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ export function useSubmitReview() {
     mutationFn: async (payload: SubmitReviewPayload) => {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await supabaseAuth.auth.getUser();
 
       const { error } = await supabase.from("reviews").insert({
         product_id: payload.product_id,
@@ -104,7 +104,7 @@ export function useAddReview(productId?: string) {
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser();
+      } = await supabaseAuth.auth.getUser();
 
       if (userError) throw userError;
       if (!user) throw new Error("Connectez-vous pour laisser un avis.");

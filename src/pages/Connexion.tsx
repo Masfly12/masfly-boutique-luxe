@@ -5,7 +5,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAuth } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight } from "lucide-react";
 
@@ -85,7 +85,7 @@ const Connexion = () => {
         toast.success("Compte créé ! Vérifiez votre email.");
         navigate("/compte");
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/compte`,
           });
         if (error) throw error;
