@@ -12,8 +12,10 @@ import Favorites from "@/pages/Favorites";
 import Contact from "@/pages/Contact";
 import APropos from "@/pages/APropos";
 import Admin from "@/pages/Admin";
+import LivraisonPaiements from "@/pages/LivraisonPaiements";
+import PolitiqueConfidentialite from "@/pages/PolitiqueConfidentialite";
+import ConditionsUtilisation from "@/pages/ConditionsUtilisation";
 import NotFound from "@/pages/NotFound";
-// ... autres pages
 
 const queryClient = new QueryClient();
 
@@ -32,21 +34,13 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/a-propos" element={<APropos />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/livraison-paiements" element={<LivraisonPaiements />} />
+          <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+          <Route path="/conditions-utilisation" element={<ConditionsUtilisation />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <Toaster />
+        <Toaster richColors position="top-right" />
       </BrowserRouter>
     </QueryClientProvider>
   );
 }
-```
-
----
-
-**Erreur 3 — corriger `.env`**
-
-La clé `VITE_SUPABASE_ANON_KEY` est absente. Ajoute-la :
-```
-VITE_SUPABASE_URL="https://nnhvlrnvjqfncxoakqje.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uaHZscm52anFmbmN4b2FrcWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5OTY5MjIsImV4cCI6MjA4OTU3MjkyMn0.-PXJNla3MWKVdgyY7qW6WRt9ri3KA4TViVLmZC2aw9U"
-VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uaHZscm52anFmbmN4b2FrcWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5OTY5MjIsImV4cCI6MjA4OTU3MjkyMn0.-PXJNla3MWKVdgyY7qW6WRt9ri3KA4TViVLmZC2aw9U" ← même valeur que PUBLISHABLE_KEY
