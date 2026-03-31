@@ -16,6 +16,7 @@ import LivraisonPaiements from "@/pages/LivraisonPaiements";
 import PolitiqueConfidentialite from "@/pages/PolitiqueConfidentialite";
 import ConditionsUtilisation from "@/pages/ConditionsUtilisation";
 import NotFound from "@/pages/NotFound";
+import VendorAuth from "@/pages/vendor/VendorAuth";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,9 @@ export default function App() {
           <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
           <Route path="/conditions-utilisation" element={<ConditionsUtilisation />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/vendor/auth" element={<VendorAuth />} />
+          <Route path="/vendor/setup" element={<VendorSetup />} />
+          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
         </Routes>
         <Toaster richColors position="top-right" />
       </BrowserRouter>
